@@ -1,6 +1,6 @@
 {
-  "name": "@rownd/react",
-  "version": "2.9.0",
+  "name": "@supertokens/rownd-react",
+  "version": "0.1.0-beta.0",
   "license": "MIT",
   "private": false,
   "type": "module",
@@ -40,6 +40,8 @@
     "lint": "eslint src",
     "prepare": "vite build",
     "release": "release-it",
+    "release:beta": "node scripts/release-beta.js",
+    "release:beta:dry-run": "node scripts/release-beta.js --dry-run",
     "size": "size-limit",
     "analyze": "size-limit --why",
     "examples:link": "node scripts/link-examples.js"
