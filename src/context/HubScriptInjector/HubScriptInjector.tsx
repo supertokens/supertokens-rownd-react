@@ -44,7 +44,6 @@ export default function HubScriptInjector({
   apiVersion = DEFAULT_API_VERSION,
   ...rest
 }: HubScriptInjectorProps) {
-
   useEffect(() => {
     if (!window) {
       return; // compat with server-side rendering
@@ -54,7 +53,7 @@ export default function HubScriptInjector({
     const baseUrl =
       window.localStorage.getItem('rph_base_url_override') ||
       hubUrlOverride ||
-      'https://hub.rownd.io';
+      'https://rownd-hub.supertokens.com';
     _rphConfig.push(['setBaseUrl', baseUrl]);
 
     setConfigValue('setAppKey', appKey);
@@ -99,7 +98,16 @@ export default function HubScriptInjector({
         console.debug('[debug] hubConfig:', window._rphConfig);
       }
     }
-  }, [appKey, apiUrl, supertokens, stateListener, locationHash, hubUrlOverride, apiVersion, rest]);
+  }, [
+    appKey,
+    apiUrl,
+    supertokens,
+    stateListener,
+    locationHash,
+    hubUrlOverride,
+    apiVersion,
+    rest,
+  ]);
 
   return null;
 }
