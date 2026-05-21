@@ -25,15 +25,28 @@ export type IsAuthenticatedResponse =
 
 export const CLAIM_USER_ID = 'https://auth.rownd.io/app_user_id';
 
-export const getRowndApiUrl = (): URL => {
+export const getSuperTokensApiUrl = (): URL => {
   let url: URL;
   const defaultUrl = 'https://api.rownd.io';
   try {
-    url = new URL(process.env.ROWND_API_URL ?? defaultUrl);
+    url = new URL(
+      process.env.ROWND_SUPERTOKENS_API_DOMAIN ??
+        process.env.ROWND_API_URL ??
+        defaultUrl
+    );
   } catch {
     url = new URL(defaultUrl);
   }
   return url;
+}
+
+export const getSuperTokensApiBasePath = (): string => {
+  const basePath = process.env.ROWND_SUPERTOKENS_API_BASE_PATH || '/auth';
+  return basePath.startsWith('/') ? basePath : `/${basePath}`;
+}
+
+export const getSuperTokensApiBaseUrl = (): URL => {
+  return new URL(getSuperTokensApiBasePath(), getSuperTokensApiUrl().origin);
 }
 
 const KEYSTORE_CACHE_TTL = 1800; // 30 minutes
@@ -55,12 +68,9 @@ export class TokenHandler {
       return this.keystoreCache.keystore;
     }
 
-    const authConfigRes = await fetch(
-      `${getRowndApiUrl().origin}/hub/auth/.well-known/oauth-authorization-server`
+    const jwksRes = await fetch(
+      `${getSuperTokensApiBaseUrl().origin}${getSuperTokensApiBaseUrl().pathname.replace(/\/$/, '')}/jwt/jwks.json`
     );
-    const authConfig = await authConfigRes.json();
-
-    const jwksRes = await fetch(authConfig.jwks_uri);
     const jwks = await jwksRes.json();
 
     const keystore = this.joseInstance.createLocalJWKSet(jwks);
@@ -128,7 +138,7 @@ export class TokenHandler {
       // This likely indicates an issue with configuration,
       // so better to throw than to fail somewhat silently.
       if ((err as Error).name === 'JWKSNoMatchingKey') {
-        throw new Error((err as Error).message + '. Do you need to update the ROWND_API_URL env var?');
+        throw new Error((err as Error).message + '. Do you need to update the ROWND_SUPERTOKENS_API_DOMAIN env var?');
       }
 
       return {
@@ -182,30 +192,21 @@ export class TokenHandler {
   }
 
   async getRowndUserData(accessToken: string): Promise<null | UserContext> {
-    const { payload } = await this.validateAccessToken(accessToken);
+    await this.validateAccessToken(accessToken);
 
-    const aud = payload?.["aud"];
-
-    if (!aud || typeof aud === 'string') {
-      return null;
-    }
-
-    const appId = aud[0]?.split(':')?.[1];
-
-    if (!appId) {
-      return null;
-    }
-
-    let userData: UserContext;
+    let userData: Partial<UserContext> & { redacted?: string[] };
 
     try {
-      const userDataRes = await fetch(`${getRowndApiUrl().origin}/me/applications/${appId}/data`, {
+      const baseUrl = getSuperTokensApiBaseUrl();
+      const userDataRes = await fetch(`${baseUrl.origin}${baseUrl.pathname.replace(/\/$/, '')}/plugin/rownd/user`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
 
-      console.log('userDataRes', userDataRes);
+      if (!userDataRes.ok) {
+        return null;
+      }
 
       userData = await userDataRes.json();
     } catch (err) {
@@ -213,7 +214,15 @@ export class TokenHandler {
       return null;
     }
 
-    return userData;
+    return {
+      data: userData.data || {},
+      groups: userData.groups || [],
+      redacted_fields: userData.redacted_fields || userData.redacted || [],
+      verified_data: userData.verified_data || {},
+      meta: userData.meta || {},
+      instant_user: userData.instant_user,
+      is_loading: Boolean(userData.is_loading),
+    };
   }
 }
 
