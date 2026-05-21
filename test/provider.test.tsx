@@ -9,7 +9,11 @@ describe('it', () => {
     const div = document.createElement('div');
     body.appendChild(div);
     ReactDOM.render(
-      <RowndProvider appKey="foo" postRegistrationUrl="https://foobar">
+      <RowndProvider
+        appKey="foo"
+        postRegistrationUrl="https://foobar"
+        supertokens={{ appInfo: { apiDomain: 'https://api.example.com' } }}
+      >
         <div />
       </RowndProvider>,
       div
