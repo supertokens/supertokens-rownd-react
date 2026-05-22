@@ -6,3 +6,4 @@ dist
 dist-next
 coverage
 *.tgz
+.env

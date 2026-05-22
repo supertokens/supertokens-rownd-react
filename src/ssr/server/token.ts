@@ -1,11 +1,16 @@
 import * as jose from 'jose';
 import { rowndCookie, RowndCookieData } from './cookie';
 import { UserContext } from '../../context/types';
+import type { SuperTokensConfig } from '../../context/RowndContext';
+
+export type RowndServerConfig = {
+  supertokens: SuperTokensConfig;
+};
 
 export type RowndAuthenticatedUser = {
   user_id: string;
   access_token: string;
-}
+};
 
 export type IsAuthenticatedResponse =
   | {
@@ -25,29 +30,27 @@ export type IsAuthenticatedResponse =
 
 export const CLAIM_USER_ID = 'https://auth.rownd.io/app_user_id';
 
-export const getSuperTokensApiUrl = (): URL => {
-  let url: URL;
-  const defaultUrl = 'https://api.rownd.io';
+export const getSuperTokensApiUrl = (config: RowndServerConfig): URL => {
   try {
-    url = new URL(
-      process.env.ROWND_SUPERTOKENS_API_DOMAIN ??
-        process.env.ROWND_API_URL ??
-        defaultUrl
-    );
+    return new URL(config.supertokens.appInfo.apiDomain);
   } catch {
-    url = new URL(defaultUrl);
+    throw new Error('Invalid supertokens.appInfo.apiDomain');
   }
-  return url;
-}
+};
 
-export const getSuperTokensApiBasePath = (): string => {
-  const basePath = process.env.ROWND_SUPERTOKENS_API_BASE_PATH || '/auth';
+export const getSuperTokensApiBasePath = (
+  config: RowndServerConfig
+): string => {
+  const basePath = config.supertokens.appInfo.apiBasePath || '/auth';
   return basePath.startsWith('/') ? basePath : `/${basePath}`;
-}
+};
 
-export const getSuperTokensApiBaseUrl = (): URL => {
-  return new URL(getSuperTokensApiBasePath(), getSuperTokensApiUrl().origin);
-}
+export const getSuperTokensApiBaseUrl = (config: RowndServerConfig): URL => {
+  return new URL(
+    getSuperTokensApiBasePath(config),
+    getSuperTokensApiUrl(config).origin
+  );
+};
 
 const KEYSTORE_CACHE_TTL = 1800; // 30 minutes
 type Keystore = (
@@ -56,35 +59,38 @@ type Keystore = (
 ) => Promise<jose.KeyLike>;
 
 export class TokenHandler {
-  private keystoreCache: undefined | { keystore: Keystore; expiresAt: number };
+  private keystoreCache = new Map<
+    string,
+    { keystore: Keystore; expiresAt: number }
+  >();
 
-  constructor(
-    private readonly joseInstance: typeof jose = jose,
-  ) {}
+  constructor(private readonly joseInstance: typeof jose = jose) {}
 
-  async getKeystore(): Promise<Keystore> {
+  async getKeystore(config: RowndServerConfig): Promise<Keystore> {
+    const baseUrl = getSuperTokensApiBaseUrl(config);
+    const cacheKey = `${baseUrl.origin}${baseUrl.pathname.replace(/\/$/, '')}`;
+    const cachedKeystore = this.keystoreCache.get(cacheKey);
 
-    if (this.keystoreCache && this.keystoreCache.expiresAt >= Date.now()) {
-      return this.keystoreCache.keystore;
+    if (cachedKeystore && cachedKeystore.expiresAt >= Date.now()) {
+      return cachedKeystore.keystore;
     }
 
-    const jwksRes = await fetch(
-      `${getSuperTokensApiBaseUrl().origin}${getSuperTokensApiBaseUrl().pathname.replace(/\/$/, '')}/jwt/jwks.json`
-    );
+    const jwksRes = await fetch(`${cacheKey}/jwt/jwks.json`);
     const jwks = await jwksRes.json();
 
     const keystore = this.joseInstance.createLocalJWKSet(jwks);
 
-    this.keystoreCache = {
+    this.keystoreCache.set(cacheKey, {
       keystore,
       expiresAt: (Date.now() / 1000 + KEYSTORE_CACHE_TTL) * 1000,
-    };
+    });
 
     return keystore;
   }
 
   async getRowndAuthenticationStatus(
     cookie: string | null,
+    config: RowndServerConfig,
     { allowExpired = false }: { allowExpired?: boolean } = {}
   ): Promise<IsAuthenticatedResponse> {
     let unverifiedAccessToken: string | undefined;
@@ -99,7 +105,10 @@ export class TokenHandler {
         throw new Error('Cookie is missing access token');
       }
 
-      const { payload, accessToken } = await this.validateAccessToken(unverifiedAccessToken);
+      const { payload, accessToken } = await this.validateAccessToken(
+        unverifiedAccessToken,
+        config
+      );
       const userId = payload?.[CLAIM_USER_ID] as string | undefined;
 
       if (!userId) {
@@ -122,7 +131,10 @@ export class TokenHandler {
 
       if (isExpired && allowExpired && unverifiedAccessToken) {
         // At least make sure the token is properly signed
-        await this.joseInstance.compactVerify(unverifiedAccessToken, await this.getKeystore());
+        await this.joseInstance.compactVerify(
+          unverifiedAccessToken,
+          await this.getKeystore(config)
+        );
 
         const payload = this.joseInstance.decodeJwt(unverifiedAccessToken);
 
@@ -132,13 +144,16 @@ export class TokenHandler {
           is_authenticated: true,
           is_expired: isExpired,
           err: undefined,
-        }
+        };
       }
 
       // This likely indicates an issue with configuration,
       // so better to throw than to fail somewhat silently.
       if ((err as Error).name === 'JWKSNoMatchingKey') {
-        throw new Error((err as Error).message + '. Do you need to update the ROWND_SUPERTOKENS_API_DOMAIN env var?');
+        throw new Error(
+          (err as Error).message +
+            '. Check the supertokens.appInfo.apiDomain server config.'
+        );
       }
 
       return {
@@ -152,13 +167,13 @@ export class TokenHandler {
   }
 
   determineAccessTokenFromCookie(cookie: string): string | undefined {
-    let cookieData: RowndCookieData | undefined
+    let cookieData: RowndCookieData | undefined;
 
     // First, try to parse as JSON
     try {
       const parsedCookie = JSON.parse(cookie);
       if (parsedCookie.accessToken) {
-        cookieData = parsedCookie
+        cookieData = parsedCookie;
       }
     } catch {
       // Do nothing
@@ -169,40 +184,47 @@ export class TokenHandler {
       cookieData = rowndCookie.parse(cookie);
     }
 
-    return cookieData?.accessToken
+    return cookieData?.accessToken;
   }
 
   async validateAccessToken(
-    accessToken?: string
+    accessToken: string | undefined,
+    config: RowndServerConfig
   ): Promise<{
     payload: jose.JWTPayload;
     accessToken: string;
   }> {
-
     if (!accessToken) {
       throw new Error('Cookie does not have accessToken');
     }
 
-    const keystore = await this.getKeystore();
+    const keystore = await this.getKeystore(config);
 
     return {
-      payload: (await this.joseInstance.jwtVerify(accessToken, keystore)).payload,
+      payload: (await this.joseInstance.jwtVerify(accessToken, keystore))
+        .payload,
       accessToken,
     };
   }
 
-  async getRowndUserData(accessToken: string): Promise<null | UserContext> {
-    await this.validateAccessToken(accessToken);
+  async getRowndUserData(
+    accessToken: string,
+    config: RowndServerConfig
+  ): Promise<null | UserContext> {
+    await this.validateAccessToken(accessToken, config);
 
     let userData: Partial<UserContext> & { redacted?: string[] };
 
     try {
-      const baseUrl = getSuperTokensApiBaseUrl();
-      const userDataRes = await fetch(`${baseUrl.origin}${baseUrl.pathname.replace(/\/$/, '')}/plugin/rownd/user`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const baseUrl = getSuperTokensApiBaseUrl(config);
+      const userDataRes = await fetch(
+        `${baseUrl.origin}${baseUrl.pathname.replace(/\/$/, '')}/plugin/rownd/user`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
 
       if (!userDataRes.ok) {
         return null;
@@ -229,5 +251,7 @@ export class TokenHandler {
 // Default implementation
 const defaultTokenHandler = new TokenHandler();
 
-export const getRowndAuthenticationStatus = defaultTokenHandler.getRowndAuthenticationStatus.bind(defaultTokenHandler);
-export const getRowndUserData = defaultTokenHandler.getRowndUserData.bind(defaultTokenHandler);
+export const getRowndAuthenticationStatus =
+  defaultTokenHandler.getRowndAuthenticationStatus.bind(defaultTokenHandler);
+export const getRowndUserData =
+  defaultTokenHandler.getRowndUserData.bind(defaultTokenHandler);

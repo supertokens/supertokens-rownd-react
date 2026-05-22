@@ -2,13 +2,14 @@ import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { RowndServerStateSync } from '@supertokens/rownd-nextjs';
 import { getRowndAccessToken, getRowndUser, getRowndUserId, isAuthenticated } from '@supertokens/rownd-nextjs/server';
+import { rowndServerConfig } from '../../rowndConfig';
 
 export default async function ProfilePage() {
   const [authenticated, userId, accessToken, user] = await Promise.all([
-    isAuthenticated(cookies),
-    getRowndUserId(cookies),
-    getRowndAccessToken(cookies),
-    getRowndUser(cookies),
+    isAuthenticated(cookies, rowndServerConfig),
+    getRowndUserId(cookies, rowndServerConfig),
+    getRowndAccessToken(cookies, rowndServerConfig),
+    getRowndUser(cookies, rowndServerConfig),
   ]);
 
   return (

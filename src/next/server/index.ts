@@ -4,6 +4,7 @@ import { isAuthenticated } from './isAuthenticated';
 import { ROWND_TOKEN_CALLBACK_PATH } from '../../ssr/server/cookie';
 import { getRowndAccessToken } from './getRowndAccessToken';
 import { getRowndUserId } from './getRowndUserId';
+import type { RowndServerConfig } from '../../ssr/server/token';
 
 export {
   getRowndUser,
@@ -13,3 +14,5 @@ export {
   getRowndAccessToken,
   getRowndUserId,
 };
+
+export type { RowndServerConfig };
