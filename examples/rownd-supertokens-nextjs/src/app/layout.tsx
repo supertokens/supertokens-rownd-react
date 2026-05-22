@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { RowndProvider } from '@rownd/next';
+import { RowndProvider } from '@supertokens/rownd-nextjs';
 import './globals.css';
 
 const backendPort = process.env.EXAMPLE_BACKEND_PORT || '3137';

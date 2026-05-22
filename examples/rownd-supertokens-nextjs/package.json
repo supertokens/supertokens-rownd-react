@@ -10,7 +10,7 @@
     "serve:backend": "node ./backend/server.mjs"
   },
   "dependencies": {
-    "@rownd/next": "file:../../packages/next",
+    "@supertokens/rownd-nextjs": "file:../../packages/next",
     "@supertokens-plugins/rownd-nodejs": "file:../../../../../supertokens-plugins/packages/rownd-nodejs",
     "concurrently": "^9.2.1",
     "cors": "^2.8.5",

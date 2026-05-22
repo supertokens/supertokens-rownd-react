@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { RowndServerStateSync } from '@rownd/next';
-import { getRowndAccessToken, getRowndUser, getRowndUserId, isAuthenticated } from '@rownd/next/server';
+import { RowndServerStateSync } from '@supertokens/rownd-nextjs';
+import { getRowndAccessToken, getRowndUser, getRowndUserId, isAuthenticated } from '@supertokens/rownd-nextjs/server';
 
 export default async function ProfilePage() {
   const [authenticated, userId, accessToken, user] = await Promise.all([
@@ -18,8 +18,8 @@ export default async function ProfilePage() {
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-violet-300">Server-rendered profile</p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight">SSR auth state</h1>
         <p className="mt-4 text-zinc-300">
-          This page uses <code>@rownd/next/server</code> helpers to validate the SuperTokens access token and load the
-          Rownd-compatible user profile from the plugin endpoint.
+          This page uses <code>@supertokens/rownd-nextjs/server</code> helpers to validate the SuperTokens access token
+          and load the Rownd-compatible user profile from the plugin endpoint.
         </p>
         <Link className="mt-6 inline-flex rounded-full bg-white px-4 py-2 font-medium text-zinc-950" href="/">
           Back home

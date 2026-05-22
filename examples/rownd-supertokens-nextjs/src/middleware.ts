@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { withRowndMiddleware } from '@rownd/next/server';
+import { withRowndMiddleware } from '@supertokens/rownd-nextjs/server';
 
 export const middleware = withRowndMiddleware(() => {
   return NextResponse.next();

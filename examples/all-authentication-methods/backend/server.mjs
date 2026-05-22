@@ -23,7 +23,7 @@ const backendPort = Number(process.env.EXAMPLE_BACKEND_PORT || 3137);
 const frontendPort = Number(process.env.EXAMPLE_FRONTEND_PORT || 5173);
 const apiDomain = `http://localhost:${backendPort}`;
 const websiteDomain = `http://localhost:${frontendPort}`;
-const hubBaseUrl = process.env.EXAMPLE_HUB_BASE_URL || 'https://d7e3fac3.supertokens-rownd-hub.pages.dev';
+const hubBaseUrl = process.env.EXAMPLE_HUB_BASE_URL;
 const appId = process.env.APP_ID || 'app_test_rownd';
 const appKey = process.env.APP_KEY || 'test_app_key';
 const rowndAppKey = requiredEnv('ROWND_APP_KEY');
@@ -91,7 +91,10 @@ SuperTokens.init({
           sendEmail: async function (input) {
             return originalImplementation.sendEmail({
               ...input,
-              urlWithLinkCode: input.urlWithLinkCode?.replace('auth/verify', 'account/login'),
+              urlWithLinkCode: input.urlWithLinkCode?.replace(
+                'auth/verify',
+                'account/login'
+              ),
             });
           },
         }),
@@ -108,7 +111,11 @@ SuperTokens.init({
           id: appId,
           name: `Rownd React Example: ${exampleName}`,
           signInMethods: [
-            { method: 'google', clientId: googleClientId, iosClientId: googleClientId },
+            {
+              method: 'google',
+              clientId: googleClientId,
+              iosClientId: googleClientId,
+            },
             // Apple is disabled until credentials are available.
             // { method: 'apple', clientId: requiredEnv('APPLE_CLIENT_ID') },
             { method: 'email' },
@@ -125,10 +132,14 @@ const app = express();
 app.use(
   cors({
     origin: websiteDomain,
-    allowedHeaders: ['content-type', 'x-rownd-app-key', ...SuperTokens.getAllCORSHeaders()],
+    allowedHeaders: [
+      'content-type',
+      'x-rownd-app-key',
+      ...SuperTokens.getAllCORSHeaders(),
+    ],
     exposedHeaders: ['front-token', 'st-access-token', 'anti-csrf'],
     credentials: true,
-  }),
+  })
 );
 app.use(express.json());
 app.use(middleware());
@@ -202,7 +213,9 @@ function loadEnvFile(envPath) {
         continue;
       }
 
-      process.env[key] = rawValue.replace(/^[']|[']$/g, '').replace(/^["]|["]$/g, '');
+      process.env[key] = rawValue
+        .replace(/^[']|[']$/g, '')
+        .replace(/^["]|["]$/g, '');
     }
   } catch (error) {
     throw new Error(`Failed to load ${envPath}: ${String(error)}`);

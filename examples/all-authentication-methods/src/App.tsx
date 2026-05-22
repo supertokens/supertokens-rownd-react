@@ -1,5 +1,5 @@
 import React from 'react';
-import { useRownd } from '../../../src/context';
+import { useRownd } from '@supertokens/rownd-react';
 import type { BootstrapConfig } from './main';
 
 type AppProps = {
@@ -8,11 +8,19 @@ type AppProps = {
   isBootstrapping?: boolean;
 };
 
-type SignInOptions = Parameters<ReturnType<typeof useRownd>['requestSignIn']>[0];
+type SignInOptions = Parameters<
+  ReturnType<typeof useRownd>['requestSignIn']
+>[0];
 
 function App({ config, bootstrapError, isBootstrapping = false }: AppProps) {
   if (bootstrapError) {
-    return <Shell hostStatus="error" authStatus="signed_out" protectedResult={{ error: bootstrapError }} />;
+    return (
+      <Shell
+        hostStatus="error"
+        authStatus="signed_out"
+        protectedResult={{ error: bootstrapError }}
+      />
+    );
   }
 
   if (isBootstrapping || !config) {
@@ -37,7 +45,9 @@ function AuthenticatedExample({ config }: { config: BootstrapConfig }) {
 
   React.useEffect(() => {
     if (rownd.is_authenticated) {
-      setScenarioStatus(page === 'iframe' ? 'iframe_sign_in_completed' : 'sign_in_completed');
+      setScenarioStatus(
+        page === 'iframe' ? 'iframe_sign_in_completed' : 'sign_in_completed'
+      );
     }
   }, [page, rownd.is_authenticated]);
 
@@ -48,7 +58,10 @@ function AuthenticatedExample({ config }: { config: BootstrapConfig }) {
 
   async function fetchProtected() {
     try {
-      const response = await fetch(`${config.supertokens.appInfo.apiDomain}/test/protected`, { credentials: 'include' });
+      const response = await fetch(
+        `${config.supertokens.appInfo.apiDomain}/test/protected`,
+        { credentials: 'include' }
+      );
       const body = await response.text();
       setProtectedResult(body);
     } catch (error) {
@@ -85,15 +98,40 @@ function AuthenticatedExample({ config }: { config: BootstrapConfig }) {
               : 'Use these controls to launch each enabled Hub auth method.'}
           </p>
           <div className="controls">
-            <button type="button" onClick={() => requestSignIn(undefined, isEmbeddedPage ? 'iframe_modal_open_requested' : 'modal_open_requested')}>
+            <button
+              type="button"
+              onClick={() =>
+                requestSignIn(
+                  undefined,
+                  isEmbeddedPage
+                    ? 'iframe_modal_open_requested'
+                    : 'modal_open_requested'
+                )
+              }
+            >
               Open Rownd auth UI
             </button>
             {!isEmbeddedPage ? (
-              <button type="button" onClick={() => requestSignIn({ method: 'email' }, 'email_requested')}>
+              <button
+                type="button"
+                onClick={() =>
+                  requestSignIn({ method: 'email' }, 'email_requested')
+                }
+              >
                 Sign in with email
               </button>
             ) : null}
-            <button type="button" onClick={() => requestSignIn({ method: 'google' }, isEmbeddedPage ? 'iframe_direct_google_requested' : 'direct_google_requested')}>
+            <button
+              type="button"
+              onClick={() =>
+                requestSignIn(
+                  { method: 'google' },
+                  isEmbeddedPage
+                    ? 'iframe_direct_google_requested'
+                    : 'direct_google_requested'
+                )
+              }
+            >
               Direct Google login
             </button>
             <button
@@ -103,16 +141,29 @@ function AuthenticatedExample({ config }: { config: BootstrapConfig }) {
                 requestSignIn(
                   {
                     method: 'one_tap',
-                    method_options: { prompt_parent_id: 'google-one-tap-parent' },
+                    method_options: {
+                      prompt_parent_id: 'google-one-tap-parent',
+                    },
                     post_login_redirect: '/profile',
                   },
-                  isEmbeddedPage ? 'iframe_one_tap_requested' : 'one_tap_requested',
+                  isEmbeddedPage
+                    ? 'iframe_one_tap_requested'
+                    : 'one_tap_requested'
                 )
               }
             >
               Show Google One Tap
             </button>
-            <button type="button" className="secondary" onClick={() => requestSignIn({ method: 'anonymous' }, isEmbeddedPage ? 'iframe_guest_requested' : 'guest_requested')}>
+            <button
+              type="button"
+              className="secondary"
+              onClick={() =>
+                requestSignIn(
+                  { method: 'anonymous' },
+                  isEmbeddedPage ? 'iframe_guest_requested' : 'guest_requested'
+                )
+              }
+            >
               Continue as guest
             </button>
             {!isEmbeddedPage ? (
@@ -135,16 +186,25 @@ function AuthenticatedExample({ config }: { config: BootstrapConfig }) {
       {showIframe && !isEmbeddedPage ? (
         <section className="card" id="iframe-panel">
           <h2>Embedded iframe</h2>
-          <p>The iframe page loads the same React app and should use the Hub popup path for Google inside the embedded page.</p>
+          <p>
+            The iframe page loads the same React app and should use the Hub
+            popup path for Google inside the embedded page.
+          </p>
           <div id="iframe-scenario">
-            <iframe className="iframe-shell" title="All auth iframe scenario" src="/iframe" />
+            <iframe
+              className="iframe-shell"
+              title="All auth iframe scenario"
+              src="/iframe"
+            />
           </div>
         </section>
       ) : null}
 
       {postLoginVisible ? (
         <section className="card" id="post-login-panel">
-          <h2>{isEmbeddedPage ? 'Signed in inside the iframe' : 'Post-login page'}</h2>
+          <h2>
+            {isEmbeddedPage ? 'Signed in inside the iframe' : 'Post-login page'}
+          </h2>
           <p>
             {isEmbeddedPage
               ? 'The embedded page does not redirect away after sign-in so you can verify the popup flow completed in place.'
@@ -185,7 +245,13 @@ function Shell({
     <main>
       <section className="card hero">
         <p>All authentication methods React example</p>
-        <h1>{page === 'iframe' ? 'Iframe auth flow' : page === 'profile' ? 'Post-login page' : 'Try the Hub auth flows'}</h1>
+        <h1>
+          {page === 'iframe'
+            ? 'Iframe auth flow'
+            : page === 'profile'
+              ? 'Post-login page'
+              : 'Try the Hub auth flows'}
+        </h1>
         <p>
           {page === 'iframe'
             ? 'This page is meant to be embedded. Opening Google here should use the Hub iframe popup flow.'
@@ -197,16 +263,20 @@ function Shell({
 
       <section className="card status-grid">
         <div className="status-row">
-          <span className="label">Host:</span> <span data-testid="host-status">{hostStatus}</span>
+          <span className="label">Host:</span>{' '}
+          <span data-testid="host-status">{hostStatus}</span>
         </div>
         <div className="status-row">
-          <span className="label">Auth:</span> <span data-testid="auth-status">{authStatus}</span>
+          <span className="label">Auth:</span>{' '}
+          <span data-testid="auth-status">{authStatus}</span>
         </div>
         <div className="status-row">
-          <span className="label">Example:</span> <span data-testid="example-name">{exampleName}</span>
+          <span className="label">Example:</span>{' '}
+          <span data-testid="example-name">{exampleName}</span>
         </div>
         <div className="status-row">
-          <span className="label">Scenario:</span> <span data-testid="scenario-status">{scenarioStatus}</span>
+          <span className="label">Scenario:</span>{' '}
+          <span data-testid="scenario-status">{scenarioStatus}</span>
         </div>
       </section>
 
@@ -218,7 +288,11 @@ function Shell({
 }
 
 function ProtectedResult({ value }: { value: unknown }) {
-  return <pre data-testid="protected-result">{typeof value === 'string' ? value : JSON.stringify(value, null, 2)}</pre>;
+  return (
+    <pre data-testid="protected-result">
+      {typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
+    </pre>
+  );
 }
 
 function getPage() {

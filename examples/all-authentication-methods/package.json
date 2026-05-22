@@ -11,7 +11,8 @@
     "start": "concurrently -k -n backend,frontend -c green,magenta \"npm run serve:backend\" \"npm run dev\""
   },
   "dependencies": {
-    "@supertokens-plugins/rownd-nodejs": "file:../../../../../supertokens-plugins/packages/rownd-nodejs",
+    "@supertokens-plugins/rownd-nodejs": "^0.3.0-beta.0",
+    "@supertokens/rownd-react": "^0.1.0-beta.1",
     "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "express": "^5.1.0",

@@ -9,8 +9,8 @@ export default function Home() {
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-sky-300">Next.js App Router</p>
         <h1 className="mt-4 text-4xl font-semibold tracking-tight">Rownd APIs backed by SuperTokens</h1>
         <p className="mt-4 max-w-2xl text-zinc-300">
-          This standalone example uses <code>@rownd/next</code>, the deployed Hub bundle, and a local SuperTokens
-          backend with the Rownd plugin.
+          This standalone example uses <code>@supertokens/rownd-nextjs</code>, the deployed Hub bundle, and a local
+          SuperTokens backend with the Rownd plugin.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link className="rounded-full bg-white px-4 py-2 font-medium text-zinc-950" href="/profile">

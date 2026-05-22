@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRownd } from '@rownd/next';
+import { useRownd } from '@supertokens/rownd-nextjs';
 
 export default function AuthControls() {
   const { is_authenticated, is_initializing, onAuthenticated, requestSignIn, signOut, user } = useRownd();

@@ -1,6 +1,6 @@
 # Rownd SuperTokens Next.js Example
 
-Standalone Next.js example using `@rownd/next`, the SuperTokens Rownd plugin, and the deployed Rownd Hub bundle.
+Standalone Next.js example using `@supertokens/rownd-nextjs`, the SuperTokens Rownd plugin, and the deployed SuperTokens Rownd Hub bundle.
 
 ## Setup
 
@@ -19,9 +19,9 @@ Standalone Next.js example using `@rownd/next`, the SuperTokens Rownd plugin, an
 
 ## What This Tests
 
-- `@rownd/next` provider setup with SuperTokens config.
+- `@supertokens/rownd-nextjs` provider setup with SuperTokens config.
 - Client APIs from `useRownd()`.
-- Server APIs from `@rownd/next/server` on `/profile`.
+- Server APIs from `@supertokens/rownd-nextjs/server` on `/profile`.
 - SSR cookie sync via `RowndServerStateSync`.
 - SuperTokens protected backend route at `/test/protected`.
 

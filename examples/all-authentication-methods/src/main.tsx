@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { RowndProvider } from '../../../src/context';
+import { RowndProvider } from '@supertokens/rownd-react';
 import App from './App';
 import './styles.css';
 
@@ -26,9 +26,13 @@ function Bootstrap() {
 
     async function loadConfig() {
       try {
-        const response = await fetch('/example-bootstrap', { credentials: 'include' });
+        const response = await fetch('/example-bootstrap', {
+          credentials: 'include',
+        });
         if (!response.ok) {
-          throw new Error(`Failed to load example bootstrap config: ${response.status}`);
+          throw new Error(
+            `Failed to load example bootstrap config: ${response.status}`
+          );
         }
 
         const bootstrapConfig = (await response.json()) as BootstrapConfig;
@@ -58,7 +62,11 @@ function Bootstrap() {
   }
 
   return (
-    <RowndProvider appKey={config.appKey} hubUrlOverride={config.hubBaseUrl} supertokens={config.supertokens}>
+    <RowndProvider
+      appKey={config.appKey}
+      hubUrlOverride={config.hubBaseUrl}
+      supertokens={config.supertokens}
+    >
       <App config={config} />
     </RowndProvider>
   );
