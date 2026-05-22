@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { RowndProviderProps } from '../../context/RowndContext';
+import { HubListenerProps, RowndProviderProps } from '../../context/RowndContext';
 import { store } from './store';
 import HubScriptInjector from '../../context/HubScriptInjector/HubScriptInjector';
 import useHub from '../../hooks/useHub';
@@ -60,7 +60,7 @@ const Client: React.FC<Omit<RowndProviderProps, 'children'>> = (props) => {
     }
   }, [hasCookieSignedIn, user.data.user_id, is_initializing, is_authenticated]);
 
-  const stateListener = useCallback(({ state, api }) => {
+  const stateListener = useCallback(({ state, api }: HubListenerProps) => {
     hubListenerCb({
       state,
       api,

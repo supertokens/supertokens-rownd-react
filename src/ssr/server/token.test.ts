@@ -9,15 +9,15 @@ const fetchMock = createFetchMock(vi);
 const mockJose = mockDeep<typeof jose>();
 
 async function generateJwk(): Promise<jose.JWK> {
-    const jwk = await new Promise<crypto.JsonWebKey>((resolve, reject) => {
-        crypto.generateKeyPair('ed25519', undefined, (e, publicKey, privateKey) => {
+    const jwk = await new Promise<JsonWebKey>((resolve, reject) => {
+        crypto.generateKeyPair('ed25519', undefined, (e, _publicKey, privateKey) => {
           if (e) {
             reject(e);
           } else {
             resolve(
-              privateKey.export({
+              (privateKey as crypto.KeyObject).export({
                 format: 'jwk',
-              })
+              }) as JsonWebKey
             );
           }
         });
@@ -34,10 +34,7 @@ describe('TokenHandler', () => {
 
             const jwk = await generateJwk();
 
-            const fm1 = fetchMock.mockOnceIf(req => req.url.includes('oauth-authorization-server'), () => Promise.resolve(new Response(JSON.stringify({
-                jwks_uri: 'https://api.rownd.io/jwks',
-            }))));
-            const fm2 = fetchMock.mockOnceIf(req => req.url.includes('jwks'), () => new Response(JSON.stringify({
+            const fm = fetchMock.mockOnceIf(req => req.url.endsWith('/auth/jwt/jwks.json'), () => new Response(JSON.stringify({
                 keys: [jwk],
             })));
 
@@ -51,8 +48,7 @@ describe('TokenHandler', () => {
             const keystore = await tokenHandler.getKeystore();
             fetchMock.dontMock();
 
-            expect(fm1).toHaveBeenCalled();
-            expect(fm2).toHaveBeenCalled();
+            expect(fm).toHaveBeenCalled();
             expect(mockJose.createLocalJWKSet).toHaveBeenCalledWith({
                 keys: [jwk],
             });
@@ -206,7 +202,12 @@ describe('TokenHandler', () => {
             });
 
             fetchMock.mockOnce(() => Promise.resolve(new Response(JSON.stringify({
-                user_id: 'user_123',
+                data: {
+                    user_id: 'user_123',
+                },
+                redacted: [],
+                verified_data: {},
+                groups: [],
             }))));
 
             fetchMock.enableMocks();
@@ -214,7 +215,15 @@ describe('TokenHandler', () => {
             fetchMock.dontMock();
 
             expect(userData).toEqual({
-                user_id: 'user_123',
+                data: {
+                    user_id: 'user_123',
+                },
+                groups: [],
+                redacted_fields: [],
+                verified_data: {},
+                meta: {},
+                instant_user: undefined,
+                is_loading: false,
             });
         });
     });

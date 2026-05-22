@@ -8,9 +8,18 @@ export type HubListenerProps = {
   api: any;
 };
 
+export type SuperTokensConfig = {
+  appInfo: {
+    appName?: string;
+    apiDomain: string;
+    apiBasePath?: string;
+  };
+};
+
 export type RowndProviderProps = {
   appKey: string;
   apiUrl?: string;
+  supertokens: SuperTokensConfig;
   rootOrigin?: string;
   hubUrlOverride?: string;
   postRegistrationUrl?: string;

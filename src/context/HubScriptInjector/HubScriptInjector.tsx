@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { HubListenerProps } from '../RowndContext';
+import { HubListenerProps, SuperTokensConfig } from '../RowndContext';
 
 declare global {
   interface Window {
@@ -24,6 +24,8 @@ const DEFAULT_API_VERSION = '2026-01-21';
 export type HubScriptInjectorProps = {
   appKey: string;
   stateListener: ({ state, api }: HubListenerProps) => void;
+  apiUrl?: string;
+  supertokens: SuperTokensConfig;
   hubUrlOverride?: string;
   locationHash?: string;
   apiVersion?: string;
@@ -35,12 +37,13 @@ const locationHash =
 
 export default function HubScriptInjector({
   appKey,
+  apiUrl,
+  supertokens,
   hubUrlOverride,
   stateListener,
   apiVersion = DEFAULT_API_VERSION,
   ...rest
 }: HubScriptInjectorProps) {
-
   useEffect(() => {
     if (!window) {
       return; // compat with server-side rendering
@@ -50,8 +53,16 @@ export default function HubScriptInjector({
     const baseUrl =
       window.localStorage.getItem('rph_base_url_override') ||
       hubUrlOverride ||
-      'https://hub.rownd.io';
+      'https://rownd-hub.supertokens.com';
     _rphConfig.push(['setBaseUrl', baseUrl]);
+
+    setConfigValue('setAppKey', appKey);
+    setConfigValue('setStateListener', stateListener);
+    setConfigValue('setLocationHash', locationHash);
+    setConfigValue('setApiVersion', apiVersion);
+    setConfigValue('setSupertokens', supertokens);
+    setConfigValue('setLegacyRowndApiUrl', apiUrl);
+
     const d = document,
       g = d.createElement('script'),
       m = d.createElement('script'),
@@ -71,11 +82,6 @@ export default function HubScriptInjector({
       d.body.appendChild(m);
     }
 
-    setConfigValue('setAppKey', appKey);
-    setConfigValue('setStateListener', stateListener);
-    setConfigValue('setLocationHash', locationHash);
-    setConfigValue('setApiVersion', apiVersion);
-
     if (window.localStorage.getItem('rph_log_level') === 'debug') {
       console.debug('[debug] rest:', rest);
     }
@@ -92,7 +98,16 @@ export default function HubScriptInjector({
         console.debug('[debug] hubConfig:', window._rphConfig);
       }
     }
-  }, [appKey, stateListener, locationHash, hubUrlOverride, apiVersion, rest]);
+  }, [
+    appKey,
+    apiUrl,
+    supertokens,
+    stateListener,
+    locationHash,
+    hubUrlOverride,
+    apiVersion,
+    rest,
+  ]);
 
   return null;
 }

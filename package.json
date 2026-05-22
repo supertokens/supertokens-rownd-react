@@ -1,6 +1,6 @@
 {
-  "name": "@rownd/react",
-  "version": "2.9.0",
+  "name": "@supertokens/rownd-react",
+  "version": "0.1.0-beta.1",
   "license": "MIT",
   "private": false,
   "type": "module",
@@ -40,6 +40,8 @@
     "lint": "eslint src",
     "prepare": "vite build",
     "release": "release-it",
+    "release:beta": "node scripts/release-beta.js",
+    "release:beta:dry-run": "node scripts/release-beta.js --dry-run",
     "size": "size-limit",
     "analyze": "size-limit --why",
     "examples:link": "node scripts/link-examples.js"
@@ -137,7 +139,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/rownd/react.git"
+    "url": "https://github.com/supertokens/supertokens-rownd-react"
   },
   "dependencies": {
     "jose": "^5.9.6"

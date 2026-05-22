@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { setCookie } from '../server/cookie';
+import { clearCookie, setCookie } from '../server/cookie';
 import { TRowndContext } from '../../context/types';
 
 const useCookie = (useRownd: () => TRowndContext) => {
@@ -19,7 +19,7 @@ const useCookie = (useRownd: () => TRowndContext) => {
 
   const cookieSignOut = useCallback(async (callback?: () => void) => {
     try {
-      await setCookie('invalid');
+      await clearCookie();
       callback?.();
     } catch (err) {
       console.log('Failed to sign out cookie: ', err);

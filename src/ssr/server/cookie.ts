@@ -26,14 +26,14 @@ const createCookie = (id: string, path: string = '/') => {
 
       return undefined;
     },
-    serialize: (data: RowndCookieData): string => {
+    serialize: (data: RowndCookieData, { maxAge = 3600 }: { maxAge?: number } = {}): string => {
       let cookie = `${encodeURIComponent(id)}=${encodeURIComponent(
         JSON.stringify(data)
       )}`;
 
       cookie += '; Secure';
       cookie += '; HttpOnly';
-      cookie += '; Max-Age=3600'; // 1 hour
+      cookie += `; Max-Age=${maxAge}`;
       cookie += '; SameSite=Strict';
       cookie += `; Path=${path}`;
 
@@ -58,6 +58,16 @@ export const setCookie = async (token: string): Promise<string | undefined> => {
     console.error('Failed to set cookie: ', err);
     return undefined; 
   }
+};
+
+export const clearCookie = async (): Promise<void> => {
+  await fetch(ROWND_TOKEN_CALLBACK_PATH, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ clear: true }),
+  });
 };
 
 export const rowndCookie = createCookie(ROWND_COOKIE_ID);
