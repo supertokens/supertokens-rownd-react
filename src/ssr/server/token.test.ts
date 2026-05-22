@@ -8,6 +8,15 @@ import crypto from 'node:crypto';
 const fetchMock = createFetchMock(vi);
 const mockJose = mockDeep<typeof jose>();
 
+const testConfig = {
+    supertokens: {
+        appInfo: {
+            apiDomain: 'https://supertokens.example.com',
+            apiBasePath: '/auth',
+        },
+    },
+};
+
 async function generateJwk(): Promise<jose.JWK> {
     const jwk = await new Promise<JsonWebKey>((resolve, reject) => {
         crypto.generateKeyPair('ed25519', undefined, (e, _publicKey, privateKey) => {
@@ -34,7 +43,7 @@ describe('TokenHandler', () => {
 
             const jwk = await generateJwk();
 
-            const fm = fetchMock.mockOnceIf(req => req.url.endsWith('/auth/jwt/jwks.json'), () => new Response(JSON.stringify({
+            const fm = fetchMock.mockOnceIf(req => req.url === 'https://supertokens.example.com/auth/jwt/jwks.json', () => new Response(JSON.stringify({
                 keys: [jwk],
             })));
 
@@ -45,7 +54,7 @@ describe('TokenHandler', () => {
             );
 
             fetchMock.enableMocks();
-            const keystore = await tokenHandler.getKeystore();
+            const keystore = await tokenHandler.getKeystore(testConfig);
             fetchMock.dontMock();
 
             expect(fm).toHaveBeenCalled();
@@ -54,7 +63,7 @@ describe('TokenHandler', () => {
             });
             expect(keystore).toBeDefined();
 
-            const keystore2 = await tokenHandler.getKeystore();
+            const keystore2 = await tokenHandler.getKeystore(testConfig);
             expect(keystore2).toBe(keystore);
             expect(mockJose.createLocalJWKSet).toHaveBeenCalledOnce();
         });
@@ -66,7 +75,7 @@ describe('TokenHandler', () => {
 
             tokenHandler.determineAccessTokenFromCookie = vi.fn().mockReturnValueOnce(null);
 
-            const status = await tokenHandler.getRowndAuthenticationStatus(null);
+            const status = await tokenHandler.getRowndAuthenticationStatus(null, testConfig);
 
             expect(status.is_authenticated).toBe(false);
             expect(status.user_id).toBeUndefined();
@@ -79,7 +88,7 @@ describe('TokenHandler', () => {
 
             tokenHandler.determineAccessTokenFromCookie = vi.fn().mockReturnValueOnce('invalid');
 
-            const status = await tokenHandler.getRowndAuthenticationStatus(null);
+            const status = await tokenHandler.getRowndAuthenticationStatus(null, testConfig);
 
             expect(status.is_authenticated).toBe(false);
             expect(status.user_id).toBeUndefined();
@@ -101,7 +110,7 @@ describe('TokenHandler', () => {
 
             const status = await tokenHandler.getRowndAuthenticationStatus(JSON.stringify({
                 accessToken: 'valid_access_token',
-            }));
+            }), testConfig);
 
             expect(status.is_authenticated).toBe(true);
             expect(status.user_id).toBe('user_123');
@@ -134,7 +143,7 @@ describe('TokenHandler', () => {
 
             const status = await tokenHandler.getRowndAuthenticationStatus(JSON.stringify({
                 accessToken: 'valid_access_token',
-            }), { allowExpired: true });
+            }), testConfig, { allowExpired: true });
 
             expect(status.is_authenticated).toBe(true);
             expect(status.user_id).toBe('user_123');
@@ -167,7 +176,7 @@ describe('TokenHandler', () => {
 
             const status = await tokenHandler.getRowndAuthenticationStatus(JSON.stringify({
                 accessToken: 'valid_access_token',
-            }), { allowExpired: false });
+            }), testConfig, { allowExpired: false });
 
             expect(status.is_authenticated).toBe(false);
             expect(status.user_id).toBeUndefined();
@@ -201,7 +210,7 @@ describe('TokenHandler', () => {
                 accessToken: 'valid_access_token',
             });
 
-            fetchMock.mockOnce(() => Promise.resolve(new Response(JSON.stringify({
+            const fm = fetchMock.mockOnceIf(req => req.url === 'https://supertokens.example.com/auth/plugin/rownd/user', () => Promise.resolve(new Response(JSON.stringify({
                 data: {
                     user_id: 'user_123',
                 },
@@ -211,8 +220,10 @@ describe('TokenHandler', () => {
             }))));
 
             fetchMock.enableMocks();
-            const userData = await tokenHandler.getRowndUserData('valid_access_token');
+            const userData = await tokenHandler.getRowndUserData('valid_access_token', testConfig);
             fetchMock.dontMock();
+
+            expect(fm).toHaveBeenCalled();
 
             expect(userData).toEqual({
                 data: {

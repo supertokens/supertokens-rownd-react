@@ -5,7 +5,7 @@ This example starts two local processes:
 - a Vite React frontend that imports the SDK from this repo's local `src`
 - a local backend using `supertokens-node`, `Passwordless`, `ThirdParty`, and `@supertokens-plugins/rownd-nodejs`
 
-It loads the Hub from `https://d7e3fac3.supertokens-rownd-hub.pages.dev`, uses a remote SuperTokens core via `SUPERTOKENS_CONNECTION_URI`, and requires real Google OAuth credentials. Apple login is disabled until credentials are available.
+It loads the Hub, uses a remote SuperTokens core via `SUPERTOKENS_CONNECTION_URI`, and requires real Google OAuth credentials. Apple login is disabled until credentials are available.
 
 ## Setup
 
@@ -20,7 +20,7 @@ It loads the Hub from `https://d7e3fac3.supertokens-rownd-hub.pages.dev`, uses a
 
 - Frontend: `http://localhost:5173`
 - Backend health: `http://localhost:3137/health`
-- Hub assets: `https://d7e3fac3.supertokens-rownd-hub.pages.dev/static/scripts/rph.mjs`
+- Hub assets: `https://rownd-hub.supertokens.com/static/scripts/rph.mjs`
 
 ## Scenarios
 

@@ -4,7 +4,14 @@ import { useEffect } from 'react';
 import { useRownd } from '@supertokens/rownd-nextjs';
 
 export default function AuthControls() {
-  const { is_authenticated, is_initializing, onAuthenticated, requestSignIn, signOut, user } = useRownd();
+  const {
+    is_authenticated,
+    is_initializing,
+    onAuthenticated,
+    requestSignIn,
+    signOut,
+    user,
+  } = useRownd();
 
   useEffect(() => {
     const unsubscribe = onAuthenticated((userData) => {
@@ -20,16 +27,37 @@ export default function AuthControls() {
         <div>
           <h2 className="text-2xl font-semibold">Auth controls</h2>
           <p className="mt-2 text-zinc-300">
-            Status: {is_initializing ? 'initializing' : is_authenticated ? 'signed in' : 'signed out'}
+            Status:{' '}
+            {is_initializing
+              ? 'initializing'
+              : is_authenticated
+                ? 'signed in'
+                : 'signed out'}
           </p>
-          {user.data.user_id ? <p className="mt-1 font-mono text-sm text-zinc-400">{user.data.user_id}</p> : null}
+          {user.data.user_id ? (
+            <p className="mt-1 font-mono text-sm text-zinc-400">
+              {user.data.user_id}
+            </p>
+          ) : null}
         </div>
       </div>
 
       <div className="mt-6 flex flex-wrap gap-3">
         <Button onClick={() => requestSignIn()}>Open Rownd UI</Button>
-        <Button onClick={() => requestSignIn({ method: 'email', post_login_redirect: '/profile' })}>Email</Button>
-        <Button onClick={() => requestSignIn({ method: 'google', post_login_redirect: '/profile' })}>Google</Button>
+        <Button
+          onClick={() =>
+            requestSignIn({ method: 'email', post_login_redirect: '/profile' })
+          }
+        >
+          Email
+        </Button>
+        <Button
+          onClick={() =>
+            requestSignIn({ method: 'google', post_login_redirect: '/profile' })
+          }
+        >
+          Google
+        </Button>
         <Button
           onClick={() =>
             requestSignIn({
@@ -41,7 +69,14 @@ export default function AuthControls() {
         >
           Google One Tap
         </Button>
-        <Button onClick={() => requestSignIn({ method: 'anonymous', post_login_redirect: '/profile' })}>
+        <Button
+          onClick={() =>
+            requestSignIn({
+              method: 'anonymous',
+              post_login_redirect: '/profile',
+            })
+          }
+        >
           Continue as guest
         </Button>
         <Button variant="secondary" onClick={() => signOut()}>

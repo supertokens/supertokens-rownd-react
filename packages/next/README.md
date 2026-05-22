@@ -80,10 +80,20 @@ Add the middleware wrapper and include the Rownd token callback path in the matc
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { withRowndMiddleware } from '@supertokens/rownd-nextjs/server';
+import type { RowndServerConfig } from '@supertokens/rownd-nextjs/server';
+
+const rowndServerConfig: RowndServerConfig = {
+  supertokens: {
+    appInfo: {
+      apiDomain: 'http://localhost:3001',
+      apiBasePath: '/auth',
+    },
+  },
+};
 
 export const middleware = withRowndMiddleware((request: NextRequest) => {
   return NextResponse.next();
-});
+}, rowndServerConfig);
 
 export const config = {
   matcher: [
@@ -97,14 +107,9 @@ export const config = {
 
 ## Server Config
 
-Server helpers validate SuperTokens access tokens using environment config:
+Server helpers validate SuperTokens access tokens using config passed by your app. The SDK does not read SuperTokens settings from `process.env`.
 
-```env
-ROWND_SUPERTOKENS_API_DOMAIN=http://localhost:3001
-ROWND_SUPERTOKENS_API_BASE_PATH=/auth
-```
-
-These values must match `supertokens.appInfo.apiDomain` and `supertokens.appInfo.apiBasePath` from the provider.
+The same `supertokens` config should be passed to `RowndProvider`, `withRowndMiddleware`, and any server helper that reads auth state.
 
 ## Server Utilities
 
@@ -115,13 +120,23 @@ import {
   getRowndUserId,
   isAuthenticated,
 } from '@supertokens/rownd-nextjs/server';
+import type { RowndServerConfig } from '@supertokens/rownd-nextjs/server';
 import { cookies } from 'next/headers';
 
+const rowndServerConfig: RowndServerConfig = {
+  supertokens: {
+    appInfo: {
+      apiDomain: 'http://localhost:3001',
+      apiBasePath: '/auth',
+    },
+  },
+};
+
 export default async function ProfilePage() {
-  const authenticated = await isAuthenticated(cookies);
-  const user = await getRowndUser(cookies);
-  const userId = await getRowndUserId(cookies);
-  const accessToken = await getRowndAccessToken(cookies);
+  const authenticated = await isAuthenticated(cookies, rowndServerConfig);
+  const user = await getRowndUser(cookies, rowndServerConfig);
+  const userId = await getRowndUserId(cookies, rowndServerConfig);
+  const accessToken = await getRowndAccessToken(cookies, rowndServerConfig);
 
   if (!authenticated) {
     return <div>Not authenticated</div>;
@@ -146,8 +161,17 @@ import { cookies } from 'next/headers';
 import { withRowndRequireSignIn } from '@supertokens/rownd-nextjs';
 import { getRowndUser } from '@supertokens/rownd-nextjs/server';
 
+const rowndServerConfig = {
+  supertokens: {
+    appInfo: {
+      apiDomain: 'http://localhost:3001',
+      apiBasePath: '/auth',
+    },
+  },
+};
+
 async function ProtectedPage() {
-  const user = await getRowndUser(cookies);
+  const user = await getRowndUser(cookies, rowndServerConfig);
 
   return <h1>Welcome {user?.data?.email ?? user?.data?.user_id}</h1>;
 }
@@ -156,7 +180,12 @@ function AuthFallback() {
   return <div>Please sign in to continue...</div>;
 }
 
-export default withRowndRequireSignIn(ProtectedPage, cookies, AuthFallback, {});
+export default withRowndRequireSignIn(
+  ProtectedPage,
+  cookies,
+  AuthFallback,
+  rowndServerConfig
+);
 ```
 
 ## Client Usage

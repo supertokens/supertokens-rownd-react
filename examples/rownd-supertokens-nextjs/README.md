@@ -2,6 +2,8 @@
 
 Standalone Next.js example using `@supertokens/rownd-nextjs`, the SuperTokens Rownd plugin, and the deployed SuperTokens Rownd Hub bundle.
 
+The package is tested locally through `"@supertokens/rownd-nextjs": "file:../../packages/next"` in `package.json`; it does not need to be published first.
+
 ## Setup
 
 1. Run `npm run build` from the repository root so `packages/next/dist` exists.
@@ -15,7 +17,7 @@ Standalone Next.js example using `@supertokens/rownd-nextjs`, the SuperTokens Ro
 
 - Frontend: `http://localhost:3000`
 - Backend health: `http://localhost:3137/health`
-- Hub assets: `https://d7e3fac3.supertokens-rownd-hub.pages.dev/static/scripts/rph.mjs`
+- Hub assets: `https://rownd-hub.supertokens.com/static/scripts/rph.mjs`
 
 ## What This Tests
 
@@ -25,13 +27,8 @@ Standalone Next.js example using `@supertokens/rownd-nextjs`, the SuperTokens Ro
 - SSR cookie sync via `RowndServerStateSync`.
 - SuperTokens protected backend route at `/test/protected`.
 
-## Required SSR Config
+## SSR Config
 
-The Next server helpers validate SuperTokens access tokens using static env config:
+The Next server helpers validate SuperTokens access tokens using config passed by the app. This example centralizes that in `src/rowndConfig.ts` and passes it to the provider, middleware, and `/profile` server helpers.
 
-```env
-ROWND_SUPERTOKENS_API_DOMAIN=http://localhost:3137
-ROWND_SUPERTOKENS_API_BASE_PATH=/auth
-```
-
-These values must match the backend `apiDomain` and SuperTokens `apiBasePath`.
+The config uses `EXAMPLE_BACKEND_PORT` to set `supertokens.appInfo.apiDomain` and hard-codes the example backend's `/auth` base path. These values must match the local backend config.

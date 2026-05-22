@@ -4,12 +4,14 @@ import {
   rowndCookie,
 } from '../../ssr/server/cookie';
 import { getRowndAuthenticationStatus } from '../../ssr/server/token';
+import type { RowndServerConfig } from '../../ssr/server/token';
 
 type NextResponse = any;
 type NextRequest = any;
 
 export const withRowndMiddleware = (
-  middleware: (request: NextRequest) => NextResponse
+  middleware: (request: NextRequest) => NextResponse,
+  config: RowndServerConfig
 ) => {
   return (request: NextRequest) => {
     if (request?.nextUrl?.pathname?.startsWith(ROWND_TOKEN_CALLBACK_PATH)) {
@@ -17,7 +19,8 @@ export const withRowndMiddleware = (
     }
 
     return getRowndAuthenticationStatus(
-      request.cookies.get(ROWND_COOKIE_ID)?.value || null
+      request.cookies.get(ROWND_COOKIE_ID)?.value || null,
+      config
     ).then((tokenInfo) => {
       request.auth = tokenInfo;
 
