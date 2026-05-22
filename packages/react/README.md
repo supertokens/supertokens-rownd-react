@@ -2,7 +2,7 @@
 
 React bindings for the SuperTokens Rownd Hub. The SDK injects the SuperTokens Rownd Hub script, keeps React state in sync with the Hub, and exposes auth helpers through `useRownd()`.
 
-For Next.js, use `@supertokens/rownd-nextjs` and see `../next/README.md`.
+For Next.js, use `@supertokens/rownd-nextjs` and see `packages/next/README.md`.
 
 ## Installation
 
