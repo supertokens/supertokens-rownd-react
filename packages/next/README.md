@@ -1,33 +1,39 @@
-# Rownd Next.js SDK Documentation
+# SuperTokens Rownd Next.js SDK
 
+Next.js bindings for the SuperTokens Rownd Hub. This package wraps the React SDK with App Router helpers, middleware support, and server utilities for reading Rownd/SuperTokens auth state.
 
 ## Installation
 
-Run `npm install @rownd/next` or `yarn add @rownd/next`.
+```bash
+npm install @supertokens/rownd-nextjs
+# or
+yarn add @supertokens/rownd-nextjs
+```
 
-## Core Components
-### RowndProvider
+## Provider Setup
 
-The root component that initializes Rownd authentication and state management. Add this to your root layout:
+Add `RowndProvider` in your root `layout.tsx`.
 
-
-In the root `layout.tsx` of your app:
-
-```jsx
-import { RowndProvider } from '@rownd/next';
+```tsx
+import { RowndProvider } from '@supertokens/rownd-nextjs';
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode,
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en">
       <body>
         <RowndProvider
-          appKey="<your app key>"
-          apiUrl="<your api url>" // Optional for enterprise users
-          hubUrlOverride="<your hub url>" // Optional for enterprise users
+          appKey="<your Rownd app key>"
+          supertokens={{
+            appInfo: {
+              appName: 'My App',
+              apiDomain: 'http://localhost:3001',
+              apiBasePath: '/auth',
+            },
+          }}
         >
           {children}
         </RowndProvider>
@@ -37,23 +43,43 @@ export default function RootLayout({
 }
 ```
 
-| Prop | Description | Required | Default |
-|------|-------------|----------|---------|
-| appKey | Your unique Rownd application identifier | Yes | - |
-| apiUrl | Enterprise API endpoint for Rownd services | No | https://api.rownd.io |
-| hubUrlOverride | Enterprise URL for the Rownd authentication hub interface | No | https://hub.rownd.io |
+Do not manually include the Hub snippet in your HTML. The provider injects the SuperTokens Rownd Hub bundle for you.
 
-> 💡 **Note**  
-> Enterprise endpoints are not needed in most use-cases and these props will default to Rownd's commercial cloud
+## RowndProvider Props
 
+| Prop | Required | Default | Description |
+| --- | --- | --- | --- |
+| `appKey` | Yes | - | Rownd app key used by the Hub. |
+| `supertokens` | Yes | - | SuperTokens app config passed to the Hub. |
+| `hubUrlOverride` | No | `https://rownd-hub.supertokens.com` | Alternate SuperTokens Rownd Hub URL. Mostly used for staging or local Hub development. |
+| `apiUrl` | No | - | Legacy Rownd API URL override, forwarded to the Hub as `setLegacyRowndApiUrl`. |
+| `rootOrigin` | No | - | Root origin for multi-domain deployments. |
+| `postRegistrationUrl` | No | - | URL the Hub should use after registration when that flow needs a redirect. |
+| `postSignOutRedirect` | No | - | URL the Hub should redirect to after sign-out. |
+| `apiVersion` | No | `2026-01-21` | Hub API version date. Set an earlier date to opt out of newer Hub behavior. |
 
-### Middleware Setup
-In your main `middleware.ts` file, add the Rownd middleware higher-order function. As well as the Rownd token callback path:
+`supertokens` has this shape:
 
-```typescript
+```ts
+type SuperTokensConfig = {
+  appInfo: {
+    appName?: string;
+    apiDomain: string;
+    apiBasePath?: string;
+  };
+};
+```
+
+`apiDomain` and `apiBasePath` must match the SuperTokens backend that the Hub should use for session creation and refresh.
+
+## Middleware Setup
+
+Add the middleware wrapper and include the Rownd token callback path in the matcher.
+
+```ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { withRowndMiddleware } from '@rownd/next/server';
+import { withRowndMiddleware } from '@supertokens/rownd-nextjs/server';
 
 export const middleware = withRowndMiddleware((request: NextRequest) => {
   return NextResponse.next();
@@ -61,151 +87,120 @@ export const middleware = withRowndMiddleware((request: NextRequest) => {
 
 export const config = {
   matcher: [
-    // Required for Rownd token handling
     '/api/rownd-token-callback',
-    // Add your protected routes
-    '/protected/:path*'
-  ]
+    '/protected/:path*',
+  ],
 };
-
 ```
 
-## Authentication Components
+`withRowndMiddleware` handles `/api/rownd-token-callback` and attaches parsed auth information to `request.auth` before your middleware runs.
 
-### Protected Routes / Pages
-To protect a page from being accessed by unauthenticated users, you can use
-the `withRowndRequireSignIn` higher-order component.
+## Server Config
 
-```jsx
+Server helpers validate SuperTokens access tokens using environment config:
+
+```env
+ROWND_SUPERTOKENS_API_DOMAIN=http://localhost:3001
+ROWND_SUPERTOKENS_API_BASE_PATH=/auth
+```
+
+These values must match `supertokens.appInfo.apiDomain` and `supertokens.appInfo.apiBasePath` from the provider.
+
+## Server Utilities
+
+```tsx
 import {
+  getRowndAccessToken,
   getRowndUser,
-  getAccessToken,
+  getRowndUserId,
   isAuthenticated,
-} from '@rownd/next/server';
-import {
-  withRowndRequireSignIn,
-} from '@rownd/next';
+} from '@supertokens/rownd-nextjs/server';
 import { cookies } from 'next/headers';
 
-async function ProtectedPage() {
+export default async function ProfilePage() {
+  const authenticated = await isAuthenticated(cookies);
   const user = await getRowndUser(cookies);
-  const isAuthenticated = await isAuthenticated(cookies);
-  const accessToken = await getAccessToken(cookies);
-  
+  const userId = await getRowndUserId(cookies);
+  const accessToken = await getRowndAccessToken(cookies);
+
+  if (!authenticated) {
+    return <div>Not authenticated</div>;
+  }
+
   return (
     <div>
-      <h1>Welcome {user.data?.user_id}</h1>
-      <p>Your access token: {user.access_token}</p>
+      <h1>User ID: {userId}</h1>
+      <p>Email: {user?.data?.email}</p>
+      <p>Access token: {accessToken}</p>
     </div>
   );
 }
+```
 
-// Fallback component shown during authentication
+## Protected Pages
+
+Use `withRowndRequireSignIn` to require sign-in for a page.
+
+```tsx
+import { cookies } from 'next/headers';
+import { withRowndRequireSignIn } from '@supertokens/rownd-nextjs';
+import { getRowndUser } from '@supertokens/rownd-nextjs/server';
+
+async function ProtectedPage() {
+  const user = await getRowndUser(cookies);
+
+  return <h1>Welcome {user?.data?.email ?? user?.data?.user_id}</h1>;
+}
+
 function AuthFallback() {
   return <div>Please sign in to continue...</div>;
 }
 
-export default withRowndRequireSignIn(ProtectedPage, cookies, AuthFallback, {
-  onUnauthenticated: () => {
-    // Optional callback when user is not authenticated
-  }
-});
+export default withRowndRequireSignIn(ProtectedPage, cookies, AuthFallback, {});
 ```
 
-### Client-Side Authentication
-Use the `useRownd` hook to access authentication state and methods:
+## Client Usage
 
-```jsx
+Use `useRownd()` in client components.
+
+```tsx
 'use client';
 
-import { useRownd } from '@rownd/next';
+import { useRownd } from '@supertokens/rownd-nextjs';
 
-export function ClientPage() {
-  const { 
-    is_authenticated,
-    is_initializing,
-    access_token,
-    requestSignIn,
-    signOut
-  } = useRownd();
+export function AuthControls() {
+  const { is_authenticated, is_initializing, requestSignIn, signOut } =
+    useRownd();
 
   if (is_initializing) {
-    return <div>Loading...</div>;
+    return <button disabled>Loading...</button>;
   }
 
-  return (
-    <div>
-      {is_authenticated ? (
-        <button onClick={() => signOut()}>Sign Out</button>
-      ) : (
-        <button onClick={() => requestSignIn()}>Sign In</button>
-      )}
-    </div>
-  );
-}
-```
-
-## Server Utilities
-### getRowndUser
-Server-side function to get the current authenticated user:
-
-```jsx
-import { getRowndUser } from '@rownd/next/server';
-import { cookies } from 'next/headers';
-
-async function ServerComponent() {
-  const user = await getRowndUser(cookies);
-  
-  if (!user) {
-    return <div>Not authenticated</div>;
+  if (is_authenticated) {
+    return <button onClick={() => signOut()}>Sign out</button>;
   }
-  
-  return (
-    <div>
-      <h1>User ID: {user.data?.user_id}</h1>
-      <h1>Email: {user.data?.email}</h1>
-      <h1>First name: {user.data?.first_name}</h1>
-      <h1>Last name: {user.data?.last_name}</h1>
-    </div>
-  );
+
+  return <button onClick={() => requestSignIn()}>Sign in</button>;
 }
 ```
 
-### State Management
-The SDK uses a custom store implementation for managing authentication state. The store includes:
+## Exports
 
-```typescript
-interface RowndState {
-  is_initializing: boolean;
-  is_authenticated: boolean;
-  access_token: string | null;
-  user: {
-    data: Record<string, any>;
-    groups: string[];
-    redacted_fields: string[];
-    verified_data: Record<string, any>;
-    meta: Record<string, any>;
-    is_loading: boolean;
-  };
-}
-```
+Client exports from `@supertokens/rownd-nextjs`:
 
-## Available Methods
+| Export | Description |
+| --- | --- |
+| `RowndProvider` | Injects the Hub and provides auth state. |
+| `useRownd` | Reads Hub state and methods in client components. |
+| `withRowndRequireSignIn` | Protects pages/components that require authentication. |
+| `RowndServerStateSync` | Syncs server-read auth state into the client store. |
 
-The `useRownd` hook provides the following methods:
+Server exports from `@supertokens/rownd-nextjs/server`:
 
-| Method | Description | Return Type |
-|--------|-------------|-------------|
-| `requestSignIn()` | Triggers the sign-in modal | `void` |
-| `signOut()` | Signs out the current user | `void` |
-| `setUser()` | Updates user data | `Promise<UserContext>` |
-| `getAccessToken()` | Gets the current access token | `Promise<string>` |
-| `manageAccount()` | Opens the account management interface | `void` |
-| `getFirebaseIdToken()` | Gets the Firebase ID token | `Promise<string>` |
-| `setUserValue()` | Updates specific user field | `Promise<UserContext>` |
-
-
-### API reference
-
-Please see the [React SDK](/rownd/react/blob/main?tab=readme-ov-file#api-reference) for details on
-Rownd Client React API's.
+| Export | Description |
+| --- | --- |
+| `withRowndMiddleware` | Handles the token callback route and attaches auth data to middleware requests. |
+| `getRowndUser` | Reads the current Rownd user from cookies. |
+| `getRowndUserId` | Reads the current Rownd user ID from cookies. |
+| `getRowndAccessToken` | Reads the current access token from cookies. |
+| `isAuthenticated` | Returns whether the current request has an authenticated Rownd/SuperTokens session. |
