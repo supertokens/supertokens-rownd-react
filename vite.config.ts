@@ -10,7 +10,7 @@ export default defineConfig({
       include: ['src/**/*'],
       outDir: 'dist',
     }),
-    preserveDirectives()
+    preserveDirectives(),
   ],
   build: {
     sourcemap: true,
@@ -20,8 +20,6 @@ export default defineConfig({
         main: resolve(__dirname, 'src/index.tsx'),
         next: resolve(__dirname, 'src/next/index.ts'),
         'next-server': resolve(__dirname, 'src/next/server/index.ts'),
-        remix: resolve(__dirname, 'src/remix/index.tsx'),
-        'remix-server': resolve(__dirname, 'src/remix/server/index.ts'),
       },
       // the proper extensions will be added
       fileName: 'rownd',
