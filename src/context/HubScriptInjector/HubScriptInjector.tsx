@@ -24,10 +24,11 @@ const DEFAULT_API_VERSION = '2026-01-21';
 export type HubScriptInjectorProps = {
   appKey: string;
   stateListener: ({ state, api }: HubListenerProps) => void;
-  apiUrl?: string;
   supertokens: SuperTokensConfig;
   hubUrlOverride?: string;
   locationHash?: string;
+  clientDomain?: string;
+  postLoginRedirect?: string;
   apiVersion?: string;
 };
 
@@ -37,7 +38,6 @@ const locationHash =
 
 export default function HubScriptInjector({
   appKey,
-  apiUrl,
   supertokens,
   hubUrlOverride,
   stateListener,
@@ -61,7 +61,6 @@ export default function HubScriptInjector({
     setConfigValue('setLocationHash', locationHash);
     setConfigValue('setApiVersion', apiVersion);
     setConfigValue('setSupertokens', supertokens);
-    setConfigValue('setLegacyRowndApiUrl', apiUrl);
 
     const d = document,
       g = d.createElement('script'),
@@ -100,7 +99,6 @@ export default function HubScriptInjector({
     }
   }, [
     appKey,
-    apiUrl,
     supertokens,
     stateListener,
     locationHash,
