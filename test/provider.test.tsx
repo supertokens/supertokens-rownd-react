@@ -7,6 +7,9 @@ describe('it', () => {
   beforeEach(() => {
     window._rphConfig = [];
     window.localStorage.clear();
+    document
+      .querySelectorAll('script[src*="/static/scripts/rph"]')
+      .forEach((script) => script.remove());
   });
 
   it('renders without crashing', async () => {
@@ -38,4 +41,5 @@ describe('it', () => {
     ]);
     ReactDOM.unmountComponentAtNode(div);
   });
+
 });

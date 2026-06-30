@@ -66,6 +66,14 @@ export async function handleRowndTokenCallback(request: Request) {
     const text = await new Response(body).text();
     const res = JSON.parse(text);
 
+    if (res?.clear) {
+      return new Response('Success', {
+        headers: {
+          'Set-Cookie': rowndCookie.clear(),
+        },
+      });
+    }
+
     const accessToken = res?.accessToken;
     if (!accessToken) {
       throw new Error('Missing access token');
