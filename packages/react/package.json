@@ -4,20 +4,15 @@
   "module": "dist/main.js",
   "types": "dist/main.d.ts",
   "files": [
-    "*"
+    "dist",
+    "README.md",
+    "LICENSE",
+    "package.json"
   ],
   "exports": {
     ".": {
       "import": "./dist/main.js",
       "types": "./dist/main.d.ts"
-    },
-    "./next": {
-      "import": "./dist/next.js",
-      "types": "./dist/next.d.ts"
-    },
-    "./remix": {
-      "import": "./dist/remix.js",
-      "types": "./dist/remix.d.ts"
     }
   },
   "license": "MIT",
@@ -30,5 +25,5 @@
     "type": "git",
     "url": "https://github.com/supertokens/supertokens-rownd-react"
   },
-  "version": "0.1.0-beta.1"
+  "version": "0.1.0"
 }

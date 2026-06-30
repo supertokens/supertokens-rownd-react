@@ -8,6 +8,10 @@ export const rowndAppKey = process.env.APP_KEY || 'test_app_key';
 export const rowndHubBaseUrl =
   process.env.EXAMPLE_HUB_BASE_URL || 'https://rownd-hub.supertokens.com';
 
+export const rowndClientDomain = process.env.EXAMPLE_CLIENT_DOMAIN;
+export const rowndPostLoginRedirect =
+  process.env.EXAMPLE_POST_LOGIN_REDIRECT || '/profile';
+
 export const rowndServerConfig: RowndServerConfig = {
   supertokens: {
     appInfo: {

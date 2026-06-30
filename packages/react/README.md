@@ -47,8 +47,9 @@ Do not manually include the Hub snippet in your HTML. The provider injects the S
 | `appKey` | Yes | - | Rownd app key used by the Hub. |
 | `supertokens` | Yes | - | SuperTokens app config passed to the Hub. |
 | `hubUrlOverride` | No | `https://rownd-hub.supertokens.com` | Alternate SuperTokens Rownd Hub URL. Mostly used for staging or local Hub development. |
-| `apiUrl` | No | - | Legacy Rownd API URL override, forwarded to the Hub as `setLegacyRowndApiUrl`. |
 | `rootOrigin` | No | - | Root origin for multi-domain deployments. |
+| `clientDomain` | No | - | Client-domain key forwarded to the Hub. Use this with the Rownd plugin `clientDomains` map to choose the frontend base URL used in magic and verification links. |
+| `postLoginRedirect` | No | - | Default URL/path the Hub should use after sign-in, including magic-link and email-verification completion. |
 | `postRegistrationUrl` | No | - | URL the Hub should use after registration when that flow needs a redirect. |
 | `postSignOutRedirect` | No | - | URL the Hub should redirect to after sign-out. |
 | `apiVersion` | No | `2026-01-21` | Hub API version date. Set an earlier date to opt out of newer Hub behavior. |
@@ -66,6 +67,19 @@ type SuperTokensConfig = {
 ```
 
 `apiDomain` and `apiBasePath` must match the SuperTokens backend that the Hub should use for session creation and refresh.
+
+For multi-domain deployments, configure a default client domain and post-login redirect on the provider:
+
+```tsx
+<RowndProvider
+  appKey={rowndAppKey}
+  supertokens={supertokens}
+  clientDomain="browser_local"
+  postLoginRedirect="/profile"
+>
+  <App />
+</RowndProvider>
+```
 
 ## useRownd
 

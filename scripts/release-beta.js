@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const rootDir = join(__dirname, '..');
 
-const version = '0.1.0-beta.1';
+const version = process.env.VERSION || '0.1.0';
 const tag = 'beta';
 const dryRun = process.argv.includes('--dry-run');
 const npmCommand = process.platform === 'win32' ? 'npm.cmd' : 'npm';

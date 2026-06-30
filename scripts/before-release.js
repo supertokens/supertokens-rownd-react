@@ -12,7 +12,7 @@ if (!version) {
     process.exit(1);
 }
 
-const packages = ['react', 'next', 'remix'];
+const packages = ['react', 'next'];
 
 // Update versions in all package.json files
 packages.forEach(pkg => {
