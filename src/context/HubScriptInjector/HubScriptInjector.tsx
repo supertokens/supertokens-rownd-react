@@ -23,6 +23,7 @@ const DEFAULT_API_VERSION = '2026-01-21';
 
 export type HubScriptInjectorProps = {
   appKey: string;
+  appVariantId?: string;
   stateListener: ({ state, api }: HubListenerProps) => void;
   supertokens: SuperTokensConfig;
   hubUrlOverride?: string;
@@ -41,6 +42,7 @@ const locationHash =
 
 export default function HubScriptInjector({
   appKey,
+  appVariantId,
   supertokens,
   hubUrlOverride,
   stateListener,
@@ -65,6 +67,7 @@ export default function HubScriptInjector({
     _rphConfig.push(['setBaseUrl', baseUrl]);
 
     setConfigValue('setAppKey', appKey);
+    setConfigValue('setAppVariantId', appVariantId);
     setConfigValue('setStateListener', stateListener);
     setConfigValue('setLocationHash', locationHashOverride ?? locationHash);
     setConfigValue('setApiVersion', apiVersion);
@@ -107,6 +110,7 @@ export default function HubScriptInjector({
     });
   }, [
     appKey,
+    appVariantId,
     supertokens,
     stateListener,
     locationHashOverride,

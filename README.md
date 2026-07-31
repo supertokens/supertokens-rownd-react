@@ -45,6 +45,7 @@ Do not manually include the Hub snippet in your HTML. The provider injects the S
 | Prop | Required | Default | Description |
 | --- | --- | --- | --- |
 | `appKey` | Yes | - | Rownd app key used by the Hub. |
+| `appVariantId` | No | - | Set when the app belongs to a Rownd app variant; forwarded to the Hub. |
 | `supertokens` | Yes | - | SuperTokens app config passed to the Hub. |
 | `hubUrlOverride` | No | `https://rownd-hub.supertokens.com` | Alternate SuperTokens Rownd Hub URL. Mostly used for staging or local Hub development. |
 | `rootOrigin` | No | - | Root origin for multi-domain deployments. |
