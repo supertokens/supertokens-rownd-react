@@ -20,6 +20,9 @@ export type RowndProviderProps = {
   /** Rownd app key used to load the correct Hub app config. */
   appKey: string;
 
+  /** Public app variant ID used by the Hub to select an app variant. */
+  appVariantId?: string;
+
   /** SuperTokens frontend config the Hub uses for session creation and refresh. */
   supertokens: SuperTokensConfig;
 

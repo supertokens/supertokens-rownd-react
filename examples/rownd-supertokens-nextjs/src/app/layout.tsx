@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { RowndProvider } from '@supertokens/rownd-nextjs';
 import {
+  rowndClientDomain,
   rowndAppKey,
   rowndHubBaseUrl,
+  rowndPostLoginRedirect,
   rowndServerConfig,
 } from '../rowndConfig';
 import './globals.css';
@@ -22,7 +24,9 @@ export default function RootLayout({
       <body>
         <RowndProvider
           appKey={rowndAppKey}
+          clientDomain={rowndClientDomain}
           hubUrlOverride={rowndHubBaseUrl}
+          postLoginRedirect={rowndPostLoginRedirect}
           supertokens={rowndServerConfig.supertokens}
           children={children as never}
         />

@@ -26,7 +26,10 @@ const createCookie = (id: string, path: string = '/') => {
 
       return undefined;
     },
-    serialize: (data: RowndCookieData, { maxAge = 3600 }: { maxAge?: number } = {}): string => {
+    serialize: (
+      data: RowndCookieData,
+      { maxAge = 3600 }: { maxAge?: number } = {}
+    ): string => {
       let cookie = `${encodeURIComponent(id)}=${encodeURIComponent(
         JSON.stringify(data)
       )}`;
@@ -34,6 +37,17 @@ const createCookie = (id: string, path: string = '/') => {
       cookie += '; Secure';
       cookie += '; HttpOnly';
       cookie += `; Max-Age=${maxAge}`;
+      cookie += '; SameSite=Strict';
+      cookie += `; Path=${path}`;
+
+      return cookie;
+    },
+    clear: (): string => {
+      let cookie = `${encodeURIComponent(id)}=`;
+
+      cookie += '; Secure';
+      cookie += '; HttpOnly';
+      cookie += '; Max-Age=0';
       cookie += '; SameSite=Strict';
       cookie += `; Path=${path}`;
 

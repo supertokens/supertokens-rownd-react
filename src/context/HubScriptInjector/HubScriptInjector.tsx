@@ -23,12 +23,16 @@ const DEFAULT_API_VERSION = '2026-01-21';
 
 export type HubScriptInjectorProps = {
   appKey: string;
+  appVariantId?: string;
   stateListener: ({ state, api }: HubListenerProps) => void;
   supertokens: SuperTokensConfig;
   hubUrlOverride?: string;
   locationHash?: string;
+  rootOrigin?: string;
   clientDomain?: string;
   postLoginRedirect?: string;
+  postRegistrationUrl?: string;
+  postSignOutRedirect?: string;
   apiVersion?: string;
 };
 
@@ -38,14 +42,20 @@ const locationHash =
 
 export default function HubScriptInjector({
   appKey,
+  appVariantId,
   supertokens,
   hubUrlOverride,
   stateListener,
   apiVersion = DEFAULT_API_VERSION,
-  ...rest
+  locationHash: locationHashOverride,
+  rootOrigin,
+  clientDomain,
+  postLoginRedirect,
+  postRegistrationUrl,
+  postSignOutRedirect,
 }: HubScriptInjectorProps) {
   useEffect(() => {
-    if (!window) {
+    if (typeof window === 'undefined') {
       return; // compat with server-side rendering
     }
 
@@ -57,8 +67,9 @@ export default function HubScriptInjector({
     _rphConfig.push(['setBaseUrl', baseUrl]);
 
     setConfigValue('setAppKey', appKey);
+    setConfigValue('setAppVariantId', appVariantId);
     setConfigValue('setStateListener', stateListener);
-    setConfigValue('setLocationHash', locationHash);
+    setConfigValue('setLocationHash', locationHashOverride ?? locationHash);
     setConfigValue('setApiVersion', apiVersion);
     setConfigValue('setSupertokens', supertokens);
 
@@ -82,29 +93,34 @@ export default function HubScriptInjector({
     }
 
     if (window.localStorage.getItem('rph_log_level') === 'debug') {
-      console.debug('[debug] rest:', rest);
+      console.debug('[debug] hubConfig:', window._rphConfig);
     }
 
-    if (rest) {
-      Object.entries(rest).forEach(([key, value]) => {
-        setConfigValue(
-          `set${key.charAt(0).toUpperCase() + key.substring(1)}`,
-          value
-        );
-      });
-
-      if (window.localStorage.getItem('rph_log_level') === 'debug') {
-        console.debug('[debug] hubConfig:', window._rphConfig);
-      }
-    }
+    Object.entries({
+      rootOrigin,
+      clientDomain,
+      postLoginRedirect,
+      postRegistrationUrl,
+      postSignOutRedirect,
+    }).forEach(([key, value]) => {
+      setConfigValue(
+        `set${key.charAt(0).toUpperCase() + key.substring(1)}`,
+        value
+      );
+    });
   }, [
     appKey,
+    appVariantId,
     supertokens,
     stateListener,
-    locationHash,
+    locationHashOverride,
     hubUrlOverride,
     apiVersion,
-    rest,
+    rootOrigin,
+    clientDomain,
+    postLoginRedirect,
+    postRegistrationUrl,
+    postSignOutRedirect,
   ]);
 
   return null;

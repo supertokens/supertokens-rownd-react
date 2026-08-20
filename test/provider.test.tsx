@@ -7,6 +7,9 @@ describe('it', () => {
   beforeEach(() => {
     window._rphConfig = [];
     window.localStorage.clear();
+    document
+      .querySelectorAll('script[src*="/static/scripts/rph"]')
+      .forEach((script) => script.remove());
   });
 
   it('renders without crashing', async () => {
@@ -16,6 +19,7 @@ describe('it', () => {
     ReactDOM.render(
       <RowndProvider
         appKey="foo"
+        appVariantId="variant-123"
         clientDomain="browser_local"
         postLoginRedirect="/profile"
         postRegistrationUrl="https://foobar"
@@ -33,9 +37,14 @@ describe('it', () => {
       'browser_local',
     ]);
     expect(window._rphConfig).toContainEqual([
+      'setAppVariantId',
+      'variant-123',
+    ]);
+    expect(window._rphConfig).toContainEqual([
       'setPostLoginRedirect',
       '/profile',
     ]);
     ReactDOM.unmountComponentAtNode(div);
   });
+
 });
