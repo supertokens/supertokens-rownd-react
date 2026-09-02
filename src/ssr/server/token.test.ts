@@ -237,5 +237,37 @@ describe('TokenHandler', () => {
                 is_loading: false,
             });
         });
+
+        it('includes the configured tenant for non-public user data', async () => {
+            const tokenHandler = new TokenHandler(mockJose);
+
+            tokenHandler.validateAccessToken = vi.fn().mockResolvedValueOnce({
+                payload: {},
+                accessToken: 'valid_access_token',
+            });
+
+            const tenantConfig = {
+                ...testConfig,
+                supertokens: {
+                    ...testConfig.supertokens,
+                    appInfo: {
+                        ...testConfig.supertokens.appInfo,
+                        tenantId: 'customer-a',
+                    },
+                },
+            };
+            const fm = fetchMock.mockOnceIf(
+                req =>
+                    req.url ===
+                    'https://supertokens.example.com/auth/plugin/rownd/user?tenantId=customer-a',
+                () => Promise.resolve(new Response(JSON.stringify({ data: {} })))
+            );
+
+            fetchMock.enableMocks();
+            await tokenHandler.getRowndUserData('valid_access_token', tenantConfig);
+            fetchMock.dontMock();
+
+            expect(fm).toHaveBeenCalled();
+        });
     });
 });

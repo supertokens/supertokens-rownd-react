@@ -217,14 +217,19 @@ export class TokenHandler {
 
     try {
       const baseUrl = getSuperTokensApiBaseUrl(config);
-      const userDataRes = await fetch(
-        `${baseUrl.origin}${baseUrl.pathname.replace(/\/$/, '')}/plugin/rownd/user`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
+      const userUrl = new URL(
+        `${baseUrl.origin}${baseUrl.pathname.replace(/\/$/, '')}/plugin/rownd/user`
       );
+      const tenantId = config.supertokens.appInfo.tenantId?.trim();
+      if (tenantId && tenantId !== 'public') {
+        userUrl.searchParams.set('tenantId', tenantId);
+      }
+
+      const userDataRes = await fetch(userUrl, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
 
       if (!userDataRes.ok) {
         return null;

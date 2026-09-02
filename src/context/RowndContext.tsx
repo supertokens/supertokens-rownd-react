@@ -13,6 +13,7 @@ export type SuperTokensConfig = {
     appName?: string;
     apiDomain: string;
     apiBasePath?: string;
+    tenantId?: string;
   };
 };
 
