@@ -1,6 +1,6 @@
 {
   "name": "@supertokens/rownd-nextjs",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "module": "dist/next.js",
   "types": "dist/next.d.ts",
