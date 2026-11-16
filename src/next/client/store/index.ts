@@ -10,7 +10,7 @@ export const store = createStore<TRowndContext>(
   {
     requestSignIn: () => {},
     getAccessToken: () => notInitialized(),
-    signOut: () => {},
+    signOut: () => Promise.reject(new Error('Rownd context/provider not initialized yet.')),
     manageAccount: () => {},
     passkeys: {
       register: () => {},
@@ -22,6 +22,7 @@ export const store = createStore<TRowndContext>(
     getAppConfig: () => notInitialized(),
     onAuthenticated: () => () => undefined,
     is_initializing: true,
+    is_signing_out: false,
     is_authenticated: false,
     access_token: null,
     auth: {

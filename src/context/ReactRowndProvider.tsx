@@ -36,16 +36,16 @@ export const ReactRowndProvider: React.FC<RowndProviderProps> = ({
     onAuthenticated,
   });
 
-  const { user, is_authenticated, is_initializing } = hubState;
+  const { user, is_authenticated, is_initializing, is_signing_out } = hubState;
   useEffect(() => {
-    if (!is_authenticated || is_initializing || !user.data.user_id) {
+    if (!is_authenticated || is_initializing || is_signing_out || !user.data.user_id) {
       return;
     }
 
     getOnAuthenticatedListeners().forEach(({ callback }) =>
       callback(hubState.user.data)
     );
-  }, [is_authenticated, is_initializing, user.data.user_id]);
+  }, [is_authenticated, is_initializing, is_signing_out, user.data.user_id]);
 
   const stateListener = useCallback(({ state, api }: HubListenerProps) => {
     hubListenerCb({ state, api, callback: setHubState })

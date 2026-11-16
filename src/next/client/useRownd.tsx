@@ -2,7 +2,7 @@ import { useStore } from './store/useStore';
 import { store } from './store';
 import { TRowndContext, UserDataContext } from '../../context/types';
 import { useCallback, useMemo } from 'react';
-import { setCookie } from '../../ssr/server/cookie';
+import { signOutWithCookie } from './cookieSync';
 import { addOnAuthenticatedListener, unsubscribeOnAuthenticatedListener } from '../../utils/listeners';
 
 export const useRownd = (): TRowndContext => {
@@ -27,16 +27,9 @@ export const useRownd = (): TRowndContext => {
     return {
       ...state,
       onAuthenticated,
-      signOut: async () => {
-        try {
-          await setCookie('invalid');
-        } catch (err) {
-          console.log('Failed to set sign out cookie: ', err);
-        }
-        state.signOut();
-      },
+      signOut: () => signOutWithCookie(state.signOut),
     };
-  }, [state]);
+  }, [state, onAuthenticated]);
 
   return memoized;
 };

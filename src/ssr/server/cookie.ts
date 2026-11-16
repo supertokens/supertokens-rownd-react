@@ -58,15 +58,27 @@ const createCookie = (id: string, path: string = '/') => {
 
 export const ROWND_TOKEN_CALLBACK_PATH = '/api/rownd-token-callback';
 
+let cookieQueue: Promise<unknown> = Promise.resolve();
+
+function writeCookie(body: { accessToken: string } | { clear: true }): Promise<void> {
+  const request = cookieQueue.then(async () => {
+    const response = await fetch(ROWND_TOKEN_CALLBACK_PATH, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      throw new Error(`Cookie callback failed: ${response.status}`);
+    }
+  });
+  // A failed request must not prevent subsequent invalidation attempts.
+  cookieQueue = request.catch(() => {});
+  return request;
+}
+
 export const setCookie = async (token: string): Promise<string | undefined> => {
   try {
-    await fetch(ROWND_TOKEN_CALLBACK_PATH, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ accessToken: token }),
-    });
+    await writeCookie({ accessToken: token });
     return token;
   } catch (err) {
     console.error('Failed to set cookie: ', err);
@@ -75,13 +87,7 @@ export const setCookie = async (token: string): Promise<string | undefined> => {
 };
 
 export const clearCookie = async (): Promise<void> => {
-  await fetch(ROWND_TOKEN_CALLBACK_PATH, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ clear: true }),
-  });
+  await writeCookie({ clear: true });
 };
 
 export const rowndCookie = createCookie(ROWND_COOKIE_ID);

@@ -9,9 +9,37 @@ type HubListenerCallback = {
   callback: (e: HubListenerInternalCallback) => void;
 };
 
+function isAuthenticated(
+  state: { auth?: { access_token?: string | null } },
+  api?: { isAuthenticated?: () => boolean }
+): boolean {
+  const token = state.auth?.access_token;
+  if (!token) return false;
+  if (typeof api?.isAuthenticated === 'function') {
+    try {
+      return api.isAuthenticated() === true;
+    } catch {
+      // Older Hub implementations may not support the current token format.
+    }
+  }
+  try {
+    // Compatibility fallback only checks expiry, not authenticity or signature.
+    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const { exp } = JSON.parse(atob(payload));
+    return typeof exp === 'number' && Number.isFinite(exp) && exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+}
+
 const useHub = () => {
   const hubApi = useRef<{ [key: string]: any } | null>(null);
-  const apiQueue = useRef<{ fnNames: string[]; args: any[] }[]>([]);
+  const apiQueue = useRef<{
+    fnNames: string[];
+    args: any[];
+    resolve?: () => void;
+    reject?: (reason: unknown) => void;
+  }[]>([]);
 
   const selectHubApi = useCallback(
     (obj: { [key: string]: any } | null, fnNames: string[]): any => {
@@ -50,8 +78,16 @@ const useHub = () => {
     [callHubApi]
   );
   const signOut = useCallback(
-    (...args: any[]) => callHubApi(['signOut'], ...args),
-    [callHubApi]
+    (...args: any[]): Promise<void> => {
+      const api = selectHubApi(hubApi.current, ['signOut']);
+      if (api) {
+        return Promise.resolve().then(() => api(...args));
+      }
+      return new Promise<void>((resolve, reject) => {
+        apiQueue.current.push({ fnNames: ['signOut'], args, resolve, reject });
+      });
+    },
+    [selectHubApi]
   );
   const manageAccount = useCallback(
     (...args: any[]) => callHubApi(['user', 'manageAccount'], ...args),
@@ -103,13 +139,19 @@ const useHub = () => {
       return;
     }
 
-    for (const { fnNames, args } of apiQueue.current) {
+    while (apiQueue.current.length) {
+      const { fnNames, args, resolve, reject } = apiQueue.current[0];
       const selectedHubApi = selectHubApi(hubApi.current, fnNames);
       if (!selectedHubApi) {
         return;
       }
 
-      selectedHubApi(...args);
+      apiQueue.current.shift();
+      if (resolve) {
+        Promise.resolve().then(() => selectedHubApi(...args)).then(resolve, reject);
+      } else {
+        selectedHubApi(...args);
+      }
     }
 
     apiQueue.current.length = 0;
@@ -134,6 +176,7 @@ const useHub = () => {
         removeEventListener,
       },
       is_initializing: true,
+      is_signing_out: false,
       is_authenticated: false,
       access_token: null,
       auth: {
@@ -171,17 +214,19 @@ const useHub = () => {
   const hubListenerCb = useCallback(
     ({ state, api, callback }: HubListenerCallback) => {
       hubApi.current = api;
+      const authenticated = isAuthenticated(state, api);
       callback((prev) => ({
         ...prev,
         ...{
           is_initializing: state.is_initializing,
-          is_authenticated: !!state.auth?.access_token,
+          is_signing_out: Boolean(state.is_signing_out),
+          is_authenticated: authenticated,
           auth_level: state.auth.auth_level,
           access_token: state.auth?.access_token || null,
           auth: {
             access_token: state.auth?.access_token,
             app_id: state.auth?.app_id,
-            is_authenticated: !!state.auth?.access_token,
+            is_authenticated: authenticated,
             is_verified_user: state.auth?.is_verified_user,
             auth_level: state.auth.auth_level,
           },
