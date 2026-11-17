@@ -4,7 +4,7 @@ type Unsubscribe = () => void;
 
 export type TRowndContext = {
   requestSignIn: (e?: SignInProps) => void;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   manageAccount: () => void;
   setUser: (e: UserDataContext) => Promise<UserContext>;
   setUserValue: (key: string, value: any) => Promise<UserContext>;
@@ -24,6 +24,7 @@ export type TRowndContext = {
   passkeys: { register: () => void; authenticate: () => void };
   is_authenticated: boolean;
   is_initializing: boolean;
+  is_signing_out: boolean;
   auth_level?: AuthLevel;
   access_token: string | null;
   auth: AuthContext;

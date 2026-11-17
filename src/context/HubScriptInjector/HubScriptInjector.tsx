@@ -19,7 +19,7 @@ function setConfigValue(key: string, value: any) {
  * Default API version for new SDK releases.
  * This controls which Hub features are enabled by default.
  */
-const DEFAULT_API_VERSION = '2026-01-21';
+const DEFAULT_API_VERSION = '2026-11-16';
 
 export type HubScriptInjectorProps = {
   appKey: string;

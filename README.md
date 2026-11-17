@@ -53,7 +53,7 @@ Do not manually include the Hub snippet in your HTML. The provider injects the S
 | `postLoginRedirect` | No | - | Default URL/path the Hub should use after sign-in, including magic-link and email-verification completion. |
 | `postRegistrationUrl` | No | - | URL the Hub should use after registration when that flow needs a redirect. |
 | `postSignOutRedirect` | No | - | URL the Hub should redirect to after sign-out. |
-| `apiVersion` | No | `2026-01-21` | Hub API version date. Set an earlier date to opt out of newer Hub behavior. |
+| `apiVersion` | No | `2026-11-16` | Hub API version date. Set an earlier date to opt out of newer Hub behavior. |
 
 `supertokens` has this shape:
 
@@ -131,7 +131,7 @@ export function ProtectedContent() {
 | Method | Description |
 | --- | --- |
 | `requestSignIn(options?)` | Opens the Hub sign-in UI. |
-| `signOut()` | Signs out the current user. |
+| `signOut()` | Returns a `Promise<void>` that settles when Hub sign-out completes. Await it before navigating; Hub failures reject. |
 | `getAccessToken(options?)` | Gets the current Rownd/SuperTokens access token. Use `{ waitForToken: true }` when making authenticated API calls. |
 | `setUser(data)` | Merges data into the Rownd user profile. |
 | `setUserValue(key, value)` | Updates one user profile field. |
@@ -140,6 +140,17 @@ export function ProtectedContent() {
 | `onAuthenticated(callback)` | Runs a callback when a user becomes authenticated. Returns an unsubscribe function. |
 
 ## Authenticated Requests
+
+`is_signing_out` indicates Hub sign-out is in progress. This release defaults to
+Hub API version `2026-11-16`; an explicit older `apiVersion` remains supported,
+but older Hubs/API versions report `is_signing_out: false`.
+Calls made while the Hub is loading wait in the API queue until it initializes.
+
+```tsx
+const { signOut, is_signing_out } = useRownd();
+// Disable sign-out controls while is_signing_out, and handle rejection in your UI.
+await signOut();
+```
 
 Call `getAccessToken({ waitForToken: true })` before requests that require the SuperTokens session.
 

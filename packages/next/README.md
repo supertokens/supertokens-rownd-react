@@ -58,7 +58,7 @@ Do not manually include the Hub snippet in your HTML. The provider injects the S
 | `postLoginRedirect` | No | - | Default URL/path the Hub should use after sign-in, including magic-link and email-verification completion. |
 | `postRegistrationUrl` | No | - | URL the Hub should use after registration when that flow needs a redirect. |
 | `postSignOutRedirect` | No | - | URL the Hub should redirect to after sign-out. |
-| `apiVersion` | No | `2026-01-21` | Hub API version date. Set an earlier date to opt out of newer Hub behavior. |
+| `apiVersion` | No | `2026-11-16` | Hub API version date. Set an earlier date to opt out of newer Hub behavior. |
 
 `supertokens` has this shape:
 
@@ -231,6 +231,37 @@ export function AuthControls() {
 ```
 
 ## Exports
+
+### Awaiting sign-out
+
+```tsx
+const { signOut, is_signing_out } = useRownd();
+
+async function handleSignOut() {
+  try {
+    await signOut();
+    window.location.assign('/');
+  } catch (error) {
+    console.error('Sign-out failed', error);
+  }
+}
+// Use is_signing_out to disable sign-out controls.
+```
+
+`signOut(): Promise<void>` waits for Hub completion and the final serialized
+HTTP-only cookie cleanup attempt. Hub errors reject after cleanup. Cookie
+network/HTTP errors are logged and remain best-effort; successful resolution
+cannot guarantee server cookie removal when that request fails. If Hub sign-out
+fails, the current authenticated cookie is resynchronized. Concurrent calls share
+the operation. Calls queued while Hub loads wait for initialization; calls made
+before the provider mounts reject explicitly.
+
+The provider and optional `RowndServerStateSync` share one synchronizer. Refresh
+cookie writes, authenticated callbacks and automatic reloads are suppressed during
+sign-out; awaited explicit sign-out leaves navigation to the caller.
+The default Hub API version is now `2026-11-16`, exposing `is_signing_out`.
+Explicit older `apiVersion` values remain honored; older Hubs/versions default
+the flag to `false`, while wrapper-initiated cookie coordination still works.
 
 Client exports from `@supertokens/rownd-nextjs`:
 
