@@ -12,10 +12,33 @@ let signOutOperation: Promise<void> | undefined;
 let awaitingSignedOutState = false;
 let lastCookieSync: { generation: number; state: TRowndContext; promise: Promise<boolean> } | undefined;
 let reloadGeneration = -1;
+let pageIdentity: string | undefined;
+
+function getIdentity(state: TRowndContext): string | undefined {
+  if (!state.access_token || !state.is_authenticated) return undefined;
+  try {
+    // The new token can precede its profile. Prefer token identity over stale user data.
+    const payload = state.access_token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(payload));
+    const userId = claims['https://auth.rownd.io/app_user_id'];
+    if (typeof userId === 'string' && userId) return userId;
+    const { sub } = claims;
+    if (typeof sub === 'string' && sub) return sub;
+  } catch {
+    // Older Hub tokens may not expose a JWT subject.
+  }
+  return state.user.data.user_id;
+}
+
+function identityChanged(state: TRowndContext): boolean {
+  const identity = getIdentity(state);
+  return Boolean(pageIdentity && identity && pageIdentity !== identity);
+}
 
 function needsFallbackReload(state: TRowndContext): boolean {
   return Array.from(consumers.values()).some(({ isFallback }) =>
-    isFallback !== undefined && isFallback === Boolean(state.access_token));
+    isFallback !== undefined && (isFallback === Boolean(state.access_token) ||
+      (!isFallback && identityChanged(state))));
 }
 
 function canComplete(state: TRowndContext, current: number): boolean {
@@ -30,8 +53,11 @@ function canComplete(state: TRowndContext, current: number): boolean {
 function maybeReload(state: TRowndContext, current: number, transition = false) {
   if (!canComplete(state, current) || reloadGeneration === current) return;
   if (state.access_token && !state.is_authenticated) return;
-  if (transition || needsFallbackReload(state)) {
+  const identityReload = identityChanged(state) &&
+    Array.from(consumers.values()).some(x => x.reloadOnChange);
+  if (transition || identityReload || needsFallbackReload(state)) {
     reloadGeneration = current;
+    pageIdentity = getIdentity(state);
     window.location.reload();
   }
 }
@@ -49,6 +75,8 @@ function sync(state: TRowndContext) {
     return;
   }
   if (state.is_initializing) return;
+  // Keep the page's identity until reload; profile-only updates must not erase a pending switch.
+  if (!pageIdentity) pageIdentity = getIdentity(state);
   if (prev && !prev.is_initializing && !prev.is_signing_out &&
       prev.access_token === state.access_token &&
       prev.is_authenticated === state.is_authenticated &&
@@ -61,7 +89,8 @@ function sync(state: TRowndContext) {
 
   if (!state.access_token) {
     authenticatedUser = undefined;
-    if (!prev?.access_token && !prev?.is_signing_out && !needsFallbackReload(state)) return;
+    if (prev && !prev.is_initializing && !prev.access_token &&
+        !prev.is_signing_out && !needsFallbackReload(state)) return;
     const promise = clearCookie().then(() => true).catch(error => {
       console.error('Failed to clear sign out cookie: ', error);
       return false;
@@ -91,9 +120,10 @@ function sync(state: TRowndContext) {
 }
 
 // Next consumers share a single store subscription and cookie writer.
-export function subscribeCookieSync(reloadOnChange = false, isFallback?: boolean): () => void {
+export function subscribeCookieSync(reloadOnChange = false, isFallback?: boolean, renderedUserId?: string): () => void {
   const consumer = {};
   consumers.set(consumer, { reloadOnChange, isFallback });
+  if (isFallback === false && renderedUserId) pageIdentity = renderedUserId;
   if (!unsubscribe) {
     unsubscribe = store.subscribe(sync);
     sync(store.getState());
@@ -117,6 +147,7 @@ export function subscribeCookieSync(reloadOnChange = false, isFallback?: boolean
       authenticatedUser = undefined;
       awaitingSignedOutState = false;
       lastCookieSync = undefined;
+      pageIdentity = undefined;
       generation++;
     }
   };

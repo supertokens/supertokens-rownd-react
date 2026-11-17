@@ -7,8 +7,11 @@ import { useRownd } from '../useRownd';
 import RowndServerStateSync from './RowndServerStateSync';
 import useHub from '../../../hooks/useHub';
 import RequireSignIn from './RequireSignIn';
+import withRowndRequireSignIn from '../withRowndRequireSignIn';
+import { getRowndAuthenticationStatus } from '../../../ssr/server/token';
 
 vi.mock('../../../context/HubScriptInjector/HubScriptInjector', () => ({ default: () => null }));
+vi.mock('../../../ssr/server/token', () => ({ getRowndAuthenticationStatus: vi.fn() }));
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -44,8 +47,12 @@ describe('shared Next cookie synchronization with real hooks', () => {
     vi.unstubAllGlobals();
   });
 
-  function mount() {
-    render(<><Client appKey="test" supertokens={{ appInfo: { apiDomain: 'https://example.com' } }} /><RowndServerStateSync /></>);
+  function mount(mode: 'provider' | 'sync' | 'protected' | 'all' | 'both' = 'both') {
+    render(<>
+      {mode !== 'sync' && <Client appKey="test" supertokens={{ appInfo: { apiDomain: 'https://example.com' } }} />}
+      {(mode === 'sync' || mode === 'all' || mode === 'both') && <RowndServerStateSync />}
+      {(mode === 'protected' || mode === 'all') && <RequireSignIn isFallback={false} />}
+    </>);
     return renderHook(() => useRownd()).result;
   }
 
@@ -293,5 +300,101 @@ describe('shared Next cookie synchronization with real hooks', () => {
     expect(reload).not.toHaveBeenCalled();
     await complete(0);
     expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['provider', 'sync', 'both'] as const)('clears the initial signed-out cookie once without reload for %s', async mode => {
+    mount(mode);
+    await flush();
+    expect(requests).toHaveLength(0);
+    publish(null, false);
+    await flush();
+    expect(requests.map(x => x.body)).toEqual([{ clear: true }]);
+    await complete(0);
+    act(() => store.setState({ user: { ...store.getState().user, data: {} } }));
+    await flush();
+    expect(requests).toHaveLength(1);
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it.each(['provider', 'sync', 'protected', 'all'] as const)('reloads an actual A-to-B identity switch, not A refresh, for %s', async mode => {
+    mount(mode);
+    const jwt = (sub: string, rotation: number) => `e30.${btoa(JSON.stringify({ sub, rotation }))}.signature`;
+    const update = (token: string, userId?: string) => act(() => store.setState({
+      access_token: token, is_authenticated: true, is_initializing: false,
+      user: { ...store.getState().user, data: userId ? { user_id: userId } : {} },
+    }));
+    update(jwt('A', 1), 'A');
+    await flush();
+    await complete(0);
+    update(jwt('A', 2));
+    await flush();
+    await complete(1);
+    update(jwt('A', 2), 'A');
+    await flush();
+    await complete(2);
+    expect(reload).not.toHaveBeenCalled();
+
+    // Magic-link consumption publishes B's token before replacing A's profile.
+    update(jwt('B', 1), 'A');
+    await flush();
+    update(jwt('B', 1));
+    update(jwt('B', 1), 'B');
+    await flush();
+    expect(reload).not.toHaveBeenCalled();
+    await complete(3);
+    await complete(4);
+    expect(reload).not.toHaveBeenCalled();
+    await complete(5);
+    expect(reload).toHaveBeenCalledTimes(mode === 'provider' ? 0 : 1);
+  });
+
+  it('keeps the stable profile identity across missing-profile refresh snapshots without JWT subjects', async () => {
+    mount('protected');
+    publish('A-token');
+    await flush();
+    await complete(0);
+    act(() => store.setState({ access_token: 'A-refreshed', user: { ...store.getState().user, data: {} } }));
+    await flush();
+    await complete(1);
+    act(() => store.setState({ user: { ...store.getState().user, data: { user_id: 'user-1' } } }));
+    await flush();
+    await complete(2);
+    expect(reload).not.toHaveBeenCalled();
+    act(() => store.setState({ access_token: 'B-token' }));
+    await flush();
+    await complete(3);
+    expect(reload).not.toHaveBeenCalled();
+    act(() => store.setState({ user: { ...store.getState().user, data: { user_id: 'B' } } }));
+    await flush();
+    expect(reload).not.toHaveBeenCalled();
+    await complete(4);
+    expect(reload).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(['A', 'B'])('compares the server-rendered A identity with first client identity %s', async clientId => {
+    mount('provider');
+    vi.mocked(getRowndAuthenticationStatus).mockResolvedValue({
+      is_authenticated: true, user_id: 'A', access_token: 'server-token-A',
+      is_expired: false, err: undefined,
+    });
+    const Protected = withRowndRequireSignIn(
+      () => <div>Server-rendered user A</div>,
+      () => ({ get: () => ({ name: 'rownd-session', value: 'server-cookie-A' }) }),
+      () => null,
+      { supertokens: { appInfo: { apiDomain: 'https://example.com' } } }
+    );
+    render(await Protected({}));
+    const token = `e30.${btoa(JSON.stringify({ sub: `session-${clientId}`, 'https://auth.rownd.io/app_user_id': clientId }))}.signature`;
+    act(() => store.setState({
+      access_token: token, is_authenticated: true, is_initializing: false,
+      user: { ...store.getState().user, data: {} },
+    }));
+    await flush();
+    act(() => store.setState({ user: { ...store.getState().user, data: { user_id: clientId } } }));
+    await flush();
+    await complete(0);
+    expect(reload).not.toHaveBeenCalled();
+    await complete(1);
+    expect(reload).toHaveBeenCalledTimes(clientId === 'A' ? 0 : 1);
   });
 });

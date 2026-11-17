@@ -43,7 +43,7 @@ const withRowndRequireSignIn = <P extends object>(
     return (
       <>
         <Component {...props} user={user} />
-        <RequireSignIn isFallback={false} />
+        <RequireSignIn isFallback={false} renderedUserId={user.user_id} />
       </>
     );
   };
