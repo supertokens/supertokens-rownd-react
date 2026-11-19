@@ -16,8 +16,16 @@
 
 The workflow tests and builds the SDKs, then uses `release-it` to commit the
 version bump, create the Git tag and GitHub release, and publish both packages
-to npm. If publishing fails after the tag is pushed, check which packages
-published before retrying; rerunning with the same version will be rejected.
+to npm.
+
+## Recover a failed npm publish
+
+If publishing fails after the tag is pushed, fix the npm publishing issue and
+start a **new** run on `main` with **Publish missing packages from the existing
+tag for the root package.json version** (`publish_only`) checked. Do not bump
+the version. This mode builds from the matching tag, which must be the latest
+stable tag and reachable from `main`. It skips packages already published at
+that version and does not create or change commits, tags, or GitHub releases.
 
 GitHub releases created with the workflow's `GITHUB_TOKEN` do not trigger the
 separate Slack notification workflow.
