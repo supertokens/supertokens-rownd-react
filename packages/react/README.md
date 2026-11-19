@@ -142,9 +142,15 @@ export function ProtectedContent() {
 ## Authenticated Requests
 
 `is_signing_out` indicates Hub sign-out is in progress. This release defaults to
-Hub API version `2026-11-16`; explicit older versions remain supported but do not
-expose the flag (it defaults to `false`). Calls queued while the Hub loads settle
-after initialization. Await `signOut()` before navigating and handle rejection.
+Hub API version `2026-11-16`; an explicit older `apiVersion` remains supported,
+but older Hubs/API versions report `is_signing_out: false`.
+Calls made while the Hub is loading wait in the API queue until it initializes.
+
+```tsx
+const { signOut, is_signing_out } = useRownd();
+// Disable sign-out controls while is_signing_out, and handle rejection in your UI.
+await signOut();
+```
 
 Call `getAccessToken({ waitForToken: true })` before requests that require the SuperTokens session.
 
