@@ -1,0 +1,82 @@
+name: Release npm packages
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: npm-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: npm-release
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          registry-url: https://registry.npmjs.org
+
+      - name: Read and validate release version
+        shell: bash
+        run: |
+          export RELEASE_VERSION
+          RELEASE_VERSION=$(node -p "require('./package.json').version")
+          stable='(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)'
+          if [[ ! "$RELEASE_VERSION" =~ ^$stable$ ]]; then
+            echo "::error::Set a stable version (X.Y.Z) in the root package.json."
+            exit 1
+          fi
+
+          latest_tag=$(git tag --sort=-version:refname | awk "/^v$stable\$/ && !found++ { print }")
+          if [[ -n "$latest_tag" && "$(printf '%s\n' "$latest_tag" "v$RELEASE_VERSION" | sort -Vu | tail -n 1)" == "$latest_tag" ]]; then
+            echo "::error::Bump the root package.json version above $latest_tag before releasing."
+            exit 1
+          fi
+
+          for package in @supertokens/rownd-react @supertokens/rownd-nextjs; do
+            npm view "$package" versions --json | node -e '
+              const versions = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+              if (versions.includes(process.env.RELEASE_VERSION)) {
+                console.error("::error::" + process.argv[1] + "@" + process.env.RELEASE_VERSION + " already exists on npm.");
+                process.exit(1);
+              }
+            ' "$package"
+          done
+
+          echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- run --coverage
+
+      - name: Release both packages
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          git fetch origin main
+          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]]; then
+            echo "::error::main has moved. Dispatch a new release from its current tip."
+            exit 1
+          fi
+
+          npm whoami
+          git branch --set-upstream-to=origin/main
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          npm run release -- "$RELEASE_VERSION" --ci --npm.allowSameVersion
